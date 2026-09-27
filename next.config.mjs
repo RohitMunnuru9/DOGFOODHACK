@@ -2,6 +2,7 @@ const apiOrigin = process.env.DOGFOOD_API_ORIGIN || 'http://127.0.0.1:8000';
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  distDir: process.env.DOGFOOD_NEXT_DIST || '.next',
   output: 'standalone',
   devIndicators: false,
   async rewrites() {

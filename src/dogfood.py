@@ -939,7 +939,7 @@ class PortalHandler(BaseHTTPRequestHandler):
                             "application/json; charset=utf-8")
             return
         if path == "/api/me" and method == "GET":
-            self.send_json(200, {"user": {"id": user["id"], "email": user["email"],
+            self.send_json(200, {"demo_mode": DEMO_MODE, "user": {"id": user["id"], "email": user["email"],
                                           "name": user["name"], "is_admin": bool(user["is_admin"])} if user else None,
                                  "roles": [dict(r) for r in conn.execute("SELECT event_id,role FROM event_roles WHERE user_id=?",
                                                                            (user["id"],)).fetchall()] if user else []})

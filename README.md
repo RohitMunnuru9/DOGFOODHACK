@@ -32,7 +32,7 @@ The seed contains a historical fixture event (`evt_01`) with 41 project rows, 30
 | `evt_review_demo` | Open Jury → Reviews and submit an assigned review |
 | `evt_vote_demo` | Vote and comment during an open community ballot |
 
-The demo password is `dogfood-demo-2026`. Seeded accounts include `organizer@demo.local`, `participant@demo.local`, `marek.nowak@example.org`, and `priya.nair@example.org`. The role selector opens the corresponding local preview account. Organizers can invite a new account by email-specific link or grant an event role to an account already registered in the portal.
+The demo password is `dogfood-demo-2026`. Seeded accounts include `organizer@demo.local`, `participant@demo.local`, `marek.nowak@example.org`, and `priya.nair@example.org`. Sign in explicitly or create your own account. Workspace tabs retain your identity; they never log into another account. Organizers can invite a new account by email-specific link or grant an event role to an account already registered in the portal.
 
 For a fresh instance without demo accounts, set `DOGFOOD_DEMO_MODE=0`, `DOGFOOD_ADMIN_EMAIL`, `DOGFOOD_ADMIN_PASSWORD` (at least 12 characters), and a new `DOGFOOD_DB` path. The configured admin account is created on first start.
 
@@ -43,9 +43,9 @@ For a fresh instance without demo accounts, set `DOGFOOD_DEMO_MODE=0`, `DOGFOOD_
 - **Judging:** assign judges, version weighted rubrics, save private criterion scores, view completion progress and individual reviews, normalize judge severity, publish a frozen result snapshot, and export CSV.
 - **Community:** randomized ballots, one vote per account, self-vote checks, comments, moderation, and an organizer activity log. Results stay hidden until the relevant event stage.
 - **Integrations:** documented REST API, signed webhooks, JSON event archive/import, signed project certificates, and judge participation records.
-- **Workspace:** Admin, Jury, Contestant, and Helper panels, animated navigation, and six arcade games.
+- **Workspace:** account-based Participate, Judge, and Organize views using shared event data.
 
-The event workflows above use SQLite and server-side authorization. Arcade scores and some dashboard demonstration panels use browser storage, so their data belongs to that browser rather than a shared event database. Existing browser-only panel data and arcade scores migrate to the current storage keys on first use.
+The event workflows above use SQLite and server-side authorization. Legacy browser-only dashboard and arcade components remain in the source tree but are not mounted in the submitted portal.
 
 ## API and data movement
 

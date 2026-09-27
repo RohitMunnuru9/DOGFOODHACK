@@ -1,6 +1,9 @@
 node_modules
 dist
 .next
+.next-browser
+test-results
+playwright-report
 data
 __pycache__
 *.pyc

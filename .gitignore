@@ -1,6 +1,7 @@
 node_modules
 dist
 .next
+.next-browser
 .env.local
 .DS_Store
 *.log
@@ -9,3 +10,5 @@ dist
 data/
 __pycache__/
 *.pyc
+test-results/
+playwright-report/

@@ -2,11 +2,6 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import DogfoodAdvanced from './DogfoodAdvanced';
 
 const root = '/dogfood-api';
-const demo = {
-  admin: 'organizer@demo.local',
-  jury: 'marek.nowak@example.org',
-  contestant: 'participant@demo.local',
-};
 const panel = 'dogfood-panel rounded-3xl border border-indigo-100 bg-white p-6 shadow-sm';
 const input = 'dogfood-input w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100';
 const button = 'dogfood-button rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50';
@@ -212,7 +207,7 @@ function IntegrityPanel({reviews, audit}) {
   </div>;
 }
 
-function DogfoodContent({role, preview = false}) {
+function DogfoodContent({role}) {
   const [ready, setReady] = useState(false);
   const [me, setMe] = useState(null);
   const [events, setEvents] = useState([]);
@@ -250,7 +245,8 @@ function DogfoodContent({role, preview = false}) {
   };
 
   const loadEvents = async () => {
-    const list = (await request('/events')).events;
+    const all = (await request('/events')).events;
+    const list = all.filter(event => role === 'admin' ? event.can_manage : role === 'jury' ? event.can_judge : true);
     setEvents(list);
     setEventId(current => current || (role === 'admin' ? list.find(e => e.id === 'evt_01')?.id :
       role === 'jury' ? list.find(e => e.id === 'evt_review_demo')?.id : list.find(e => e.id === 'evt_demo')?.id) || list[0]?.id || '');
@@ -287,7 +283,6 @@ function DogfoodContent({role, preview = false}) {
     let active = true;
     (async () => {
       try {
-        if (preview && demo[role]) await request('/login', 'POST', {email: demo[role], password: 'dogfood-demo-2026'});
         const identity = await request('/me');
         if (!active) return;
         setMe(identity.user);
@@ -296,7 +291,7 @@ function DogfoodContent({role, preview = false}) {
       } catch (failure) { if (active) { setReady(true); notify(failure.message, true); } }
     })();
     return () => { active = false; };
-  }, [role, preview]);
+  }, [role]);
 
   useEffect(() => { if (ready && me && eventId) loadEvent().catch(failure => notify(failure.message, true)); }, [ready, me?.id, eventId, role]);
   useEffect(() => {
