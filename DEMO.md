@@ -1,35 +1,42 @@
-# Five-minute lifecycle recording
+# Recorded product walkthrough
 
-[Watch or download the recorded demo](docs/demo.webm) (WebM, 1280 × 900, 5 minutes 5 seconds, on-screen captions, no audio).
+[Watch or download the MP4](public/landing/demo.mp4) · [Download WebM](docs/landing-demo.webm)
 
-The recording shows real browser actions against the Docker build. It creates one event and follows separate organizer, participant and judge accounts through the whole lifecycle. Captions explain the rules; they are recording overlays, not product controls.
+The landing page embeds this updated **36.4-second** walkthrough at `/#watch-demo`. It records real browser actions against the optimized Next.js/Python application at **1440 × 900, 25 fps**. The video has on-screen explanations and an English caption track, with no audio. The illustrations on the landing page are generated artwork; all footage and the video poster show the actual app.
 
-| Time | What is shown |
+The recording demonstrates event setup, team creation, drafting, submitting, assigning a judge, private scoring, publication, CSV download, the public gallery, and Arcade. It uses separate organizer, participant, and judge accounts in a disposable demo database. Setup and account-switch waits happen outside captured scenes. Scenes are joined directly, unchanged holds are capped, and the encoder uses one consistent timebase, avoiding blank gaps or a lingering end frame. Recording captions are overlays, not product controls.
+
+| Time | Scene |
 | --- | --- |
-| 0:00 | Local portal and explicit account sign-in |
-| 0:15 | Event creation with dates, a track and a prize |
-| 0:40 | Event judge role and track-scope controls |
-| 1:05 | Participant team creation |
-| 1:25 | Project story and private draft |
-| 1:55 | Submission and public gallery |
-| 2:15 | Balanced judge assignment |
-| 2:40 | Private weighted review |
-| 3:10 | Saved scores and normalization explanation |
-| 3:30 | Organizer progress and review completion |
-| 3:55 | Close submissions and publish a frozen result |
-| 4:15 | Download CSV and show archive controls |
-| 4:35 | Verify a signed participation certificate |
-| 4:48 | Public results without signing in |
+| 0:00 | 01 / Good ideas. Great company. |
+| 0:01 | 02 / The whole event, at a glance |
+| 0:04 | 03 / Make room for your next event |
+| 0:09 | 04 / Build a team. Tell your story. |
+| 0:15 | 05 / Ready to share |
+| 0:17 | 06 / Give every project a fair review |
+| 0:19 | 07 / Thoughtful, private judging |
+| 0:26 | 08 / Publish a result everyone can trust |
+| 0:28 | 09 / Celebrate the work |
+| 0:30 | 10 / A little room to play |
+| 0:34 | DOGFOOD / Make something that matters |
 
-To reproduce it against a running disposable demo instance:
+The exact contiguous scene boundaries are in [docs/demo-timeline.json](docs/demo-timeline.json). [docs/demo-video-check.txt](docs/demo-video-check.txt) records complete decode checks, duration alignment, black-gap detection, and freeze detection for both encodings. Browser tests additionally play and seek the embedded MP4 on desktop and phone layouts.
+
+## Reproduce
+
+Use a disposable/demo instance: the recorder creates real event, team, project, and review data. Install Playwright Chromium and a full FFmpeg build supporting H.264 and VP9, then:
 
 ```powershell
-npm ci
-npx playwright install chromium
-$env:DOGFOOD_TEST_URL='http://127.0.0.1:18000'
+$env:DOGFOOD_TEST_URL='http://127.0.0.1:14000'
+$env:FFMPEG_PATH='C:/path/to/ffmpeg.exe'
 node scripts/record-demo.mjs
+node scripts/check-demo.mjs
 ```
 
-The recorder takes about five minutes, creates real demo data, asserts key workflow outcomes, and saves `docs/demo.webm`. Use the actual Compose port for `DOGFOOD_TEST_URL`. The same lifecycle is covered by a faster automated browser test. The host acceptance receipts and broader test commands are in [TESTING.md](TESTING.md).
+Raw captured frames stay under ignored `test-results/demo-recording/`. Successful runs replace `public/landing/demo.mp4`, its poster and captions, `docs/landing-demo.webm`, and the timeline. Next standalone deployments must copy `public/` beside the server; the Dockerfile includes it. The video loads only when requested and never autoplays.
 
-Submit the public repository link together with this video link. If the organizer's submission form requires a hosted video service or direct upload, upload this file there and use the resulting link.
+For a submission form requiring a hosted video service or direct upload, upload the MP4 or WebM and use the resulting link.
+
+## Submission-length recording
+
+The host's [required deliverables](https://dogfoodhack.com/spec/) also call for a five-minute demo. The existing [five-minute lifecycle recording](docs/demo.webm) is preserved separately; it shows the preceding interface. The new landing-page preview above shows the current clay interface and does not replace that longer submission artifact.

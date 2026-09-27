@@ -43,9 +43,11 @@ For a fresh instance without demo accounts, set `DOGFOOD_DEMO_MODE=0`, `DOGFOOD_
 - **Judging:** assign judges, version weighted rubrics, assign balanced batches within track scopes, save private criterion scores, view completion progress and individual reviews, normalize judge severity, publish a frozen result snapshot, and export CSV.
 - **Community:** authenticated or email-bound invitation voting, randomized ballots, one vote per account, self-vote checks, comments, moderation, and an organizer activity log. Results stay hidden until the relevant event stage.
 - **Integrations:** documented REST API, signed webhooks, JSON event archive/import, signed project certificates, and judge participation records.
-- **Workspace:** account-based Participate, Judge, and Organize views using shared event data.
+- **Workspace:** white clay interface with account-based Participate, Judge, and Organize views, custom controls, and independently scrolling content.
+- **Arcade:** six games with browser-local high scores and a leaderboard.
+- **Landing page:** original clay illustrations and an embedded recording of the actual app.
 
-The event workflows above use SQLite and server-side authorization. Legacy browser-only dashboard and arcade components remain in the source tree but are not mounted in the submitted portal.
+The event workflows above use SQLite and server-side authorization. Arcade is available in every workspace; its scores are stored only in the current browser and do not affect judging results. Legacy dashboard components remain unmounted.
 
 ## API and data movement
 
@@ -68,7 +70,7 @@ npm run build
 
 The checked-in [`acceptance-report.txt`](acceptance-report.txt) shows **7/7 PASS** for the published T1/T2 checks. `.dogfood.toml` claims T1 and T2. The Python suite covers additional T1–T4 behavior, including role isolation, deadlines, judging, voting, records, archive import, and webhook signing. T3 and T4 do not have published acceptance probes, so their remaining limits are described here rather than included in the tier claim.
 
-See [TESTING.md](TESTING.md) for Docker, offline-runtime, browser and persistence checks, and [DEMO.md](DEMO.md) for the five-minute lifecycle walkthrough.
+See [TESTING.md](TESTING.md) for Docker, offline-runtime, browser and persistence checks, and [DEMO.md](DEMO.md) for the updated product walkthrough and recording instructions.
 
 ## Documents
 

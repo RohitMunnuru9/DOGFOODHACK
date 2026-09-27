@@ -1,0 +1,11 @@
+# Landing illustration prompts
+
+Generated with the built-in imagegen tool. Both images are decorative clay illustrations; the embedded video and its poster show the real application.
+
+## public/landing/build-together-clay.png
+
+Use case: stylized-concept. Asset type: website landing hero illustration for DOGFOOD, a hackathon submission and judging platform. Create a polished tactile clay miniature still life: an open warm-white laptop with a few simple sage project cards on screen, three handmade rounded blocks fitting together beside it, a tiny terracotta pencil and folded paper idea sketch. Feels like real matte ceramic and soft modeling clay photographed on a seamless warm off-white tabletop. Intentional product editorial composition, no generic floating objects. Wide landscape 3:2 composition, central objects occupy 65% width, generous breathing room. Soft natural daylight from upper left, delicate contact shadows, white and ivory dominant with restrained dusty terracotta, sage green, pale sand. Friendly and crafted, sophisticated, not childish. No people, no text, no letters, no logos, no watermark, no purple, no blue, no black surfaces, no colorful gradients. Sharp high quality render suitable for the left column of a white claymorphism web landing page.
+
+## public/landing/judging-clay.png
+
+Use case: stylized-concept. Asset type: supporting website illustration for a hackathon judging and results section. Create a refined tactile clay miniature still life: three warm-white rounded submission tiles arranged neatly on a low ceramic tray, sage embossed check marks, a small terracotta pencil, and a modest sand-colored award rosette. Suggest thoughtful evaluation and celebrating completed projects. Objects rest physically on an off-white tabletop, not floating. Wide landscape 3:2 framing with ample empty margin, centered arrangement. Realistic soft handmade matte ceramic and modeling clay texture, rounded edges, subtle inset details, gentle daylight from upper left and delicate contact shadows. White/ivory dominant, muted sage, dusty terracotta, pale sand accents. Sophisticated restrained editorial product illustration matching a white claymorphism app. No people, no text, no letters, no logos, no watermark, no purple, no blue, no black surfaces, no gradients.

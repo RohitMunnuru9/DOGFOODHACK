@@ -2,6 +2,7 @@
 
 import React, {useEffect, useState} from 'react';
 import DogfoodWorkspace from './DogfoodWorkspace';
+import LandingShowcase from './LandingShowcase';
 import {motion, MotionConfig} from 'framer-motion';
 import {ArrowUpRight, LogOut, Layers} from 'lucide-react';
 import {ClaySkeleton} from './ClayUI';
@@ -61,6 +62,7 @@ export default function PortalApp() {
             <button key={value} aria-pressed={role === value} onClick={() => setRole(value)}>{role===value&&<motion.span layoutId="role-highlight" className="clay-role-highlight" transition={{type:'spring',stiffness:420,damping:36}}/>}<span>{label}</span></button>)}
         </nav>}
       <nav className="clay-account-nav" aria-label="Main navigation">
+        {identity&&!identity.user&&<a href="#watch-demo" className="clay-watch-link">Watch the demo</a>}
         <a href="/projects" className="clay-gallery-link">Public gallery <ArrowUpRight size={15}/></a>
         {identity?.user && <><span data-testid="account-email">{identity.user.email}</span>
           <button className="clay-signout" onClick={logout} disabled={busy}><LogOut size={16}/><span>Sign out</span></button></>}
@@ -68,8 +70,8 @@ export default function PortalApp() {
     </header>
     {error && <p role="alert" className="mx-auto my-4 max-w-3xl rounded-xl bg-red-50 p-4 text-red-800">{error}</p>}
     {!identity ? <main className="clay-boot"><ClaySkeleton label="Connecting to your portal"/></main> : !identity.user ?
-      <main className="clay-auth-layout" id="workspace-main">
-        <div className="clay-auth-story"><span className="clay-eyebrow">A LITTLE STRUCTURE. A LOT OF POSSIBILITY.</span><h2>Good ideas.<br/>Great company.</h2><p>A calmer space to build together, share your work, and discover what comes next.</p><div className="clay-auth-stack" aria-hidden="true"><div><span className="clay-mini-icon">01</span><strong>Make something<br/>that matters.</strong><small>Your next chapter starts here.</small></div><div><span className="clay-status-dot"/> Built together. Judged thoughtfully.</div></div><span className="clay-auth-foot">THE DOGFOOD HACKATHON · 2026</span></div>
+      <main className="clay-landing" id="workspace-main"><div className="clay-auth-layout">
+        <div className="clay-auth-story"><span className="clay-eyebrow">A LITTLE STRUCTURE. A LOT OF POSSIBILITY.</span><h2>Good ideas.<br/>Great company.</h2><p>A calmer space to build together, share your work, and discover what comes next.</p><img className="clay-landing-hero" src="/landing/build-together-clay.png" alt="A handmade clay laptop and interlocking blocks on a warm white tabletop" width="1536" height="1024" fetchPriority="high"/><span className="clay-auth-foot">THE DOGFOOD HACKATHON · 2026</span></div>
         <motion.div className="clay-auth-card" initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} transition={{duration:.35}}>
         <p className="clay-eyebrow">YOUR WORKSPACE IS WAITING</p>
         <h1>{register ? 'Create your account' : 'Welcome back'}</h1>
@@ -91,7 +93,7 @@ export default function PortalApp() {
           <div className="flex flex-wrap gap-2">{[['Organizer','organizer@demo.local','admin'],['Judge','marek.nowak@example.org','jury'],['Participant','participant@demo.local','contestant']].map(([label,email,workspace]) =>
             <button key={email} className={`dogfood-secondary clay-demo-${workspace}`} disabled={busy} onClick={() => authenticate({email,password:'dogfood-demo-2026'},'login',workspace)}>{label}</button>)}</div>
         </section>}
-        </motion.div></main> : <main className="clay-workspace-root">
+        </motion.div></div><LandingShowcase/></main> : <main className="clay-workspace-root">
         <DogfoodWorkspace key={`${identity.user.id}:${role}`} role={role} />
       </main>}
   </div></MotionConfig>;

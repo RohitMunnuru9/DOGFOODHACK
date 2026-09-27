@@ -1,0 +1,4 @@
+Video verification
+11 contiguous scenes, 1440×900, 25 fps.
+public/landing/demo.mp4: 36.36 seconds; decode passed; no black gaps >= 0.15s; no detected freezes >= 2.5s.
+docs/landing-demo.webm: 36.36 seconds; decode passed; no black gaps >= 0.15s; no detected freezes >= 2.5s.

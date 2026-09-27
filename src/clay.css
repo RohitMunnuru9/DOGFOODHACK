@@ -29,3 +29,21 @@
 .clay-app--workspace .clay-sidebar>*{flex-shrink:0}
 .clay-app--workspace .clay-main{min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;scroll-padding:16px}
 @media(max-width:900px){.clay-app--workspace .clay-shell{grid-template-rows:auto minmax(0,1fr)}.clay-app--workspace .clay-main{scrollbar-gutter:auto}}
+
+/* Landing illustrations and the real product walkthrough. */
+.clay-watch-link{font-weight:650;color:var(--terra)}
+.clay-landing-hero{width:100%;max-width:560px;height:auto;aspect-ratio:3/2;object-fit:cover;border-radius:26px;margin:24px 0 18px}
+.clay-landing .clay-auth-layout{align-items:center;padding-bottom:65px}
+.clay-landing-showcase{max-width:1240px;margin:auto;padding:50px 36px 75px;border-top:1px solid var(--line);scroll-margin-top:24px}
+.clay-tour-heading{display:flex;justify-content:space-between;gap:50px;align-items:end;margin-bottom:26px}
+.clay-tour-heading h2,.clay-landing-detail h2{font-size:clamp(28px,3vw,40px);line-height:1.15;font-weight:700;letter-spacing:-.04em;margin:12px 0}
+.clay-tour-heading>p{max-width:370px;color:var(--muted);font-size:14px;line-height:1.8}
+.clay-tour-video{padding:10px;border-radius:25px;background:white;border:1px solid var(--line);box-shadow:var(--clay-shadow);overflow:hidden}
+.clay-tour-video video{display:block;width:100%;aspect-ratio:16/10;object-fit:contain;background:#f7f7f5;border-radius:17px}
+.clay-tour-meta{display:flex;justify-content:space-between;gap:20px;padding:15px 4px;font-size:12px;color:var(--muted)}
+.clay-tour-meta a{color:var(--terra);font-weight:600}
+.clay-landing-detail{display:grid;grid-template-columns:1fr 1fr;gap:65px;align-items:center;margin-top:75px}
+.clay-landing-detail>img{width:100%;height:auto;aspect-ratio:3/2;object-fit:cover;border-radius:28px}
+.clay-landing-detail ul{list-style:none;padding:0;margin:28px 0;display:grid;gap:21px}
+.clay-landing-detail strong{font-size:15px}.clay-landing-detail li p{margin-top:5px;color:var(--muted);font-size:13px;line-height:1.8}
+@media(max-width:640px){.clay-landing .clay-auth-story{display:block;margin-bottom:30px}.clay-landing .clay-auth-story h2{font-size:42px}.clay-landing-hero{max-height:240px;object-fit:contain;background:#faf9f5;margin:18px 0}.clay-landing-showcase{padding:32px 20px 45px}.clay-tour-heading{display:block}.clay-tour-heading>p{margin-top:16px}.clay-tour-video{padding:5px;border-radius:17px}.clay-tour-video video{border-radius:12px}.clay-tour-meta{flex-direction:column;gap:8px;font-size:11px}.clay-landing-detail{grid-template-columns:1fr;gap:24px;margin-top:35px}.clay-landing-detail>img{max-height:260px;object-fit:contain}.clay-watch-link{font-size:11px}}
