@@ -2,72 +2,3277 @@
   "openapi": "3.1.0",
   "info": {
     "title": "DOGFOOD Local Portal API",
-    "version": "0.2.0",
-    "description": "Local REST API for event creation, participation, judging, publication and portability. All writes use JSON. An HttpOnly session cookie or bearer token identifies the caller. Event roles are enforced by the Python service. IDs are opaque strings; times are ISO 8601 with a timezone offset."
+    "version": "1.0.0",
+    "description": "Local REST API for event creation, participation, judging, publication and portability. All writes use JSON. An HttpOnly session cookie or bearer token identifies the caller. Event roles are enforced by the Python service. IDs are opaque strings; times are ISO 8601 with a timezone offset. Browser clients may use the equivalent /dogfood-api prefix. Invites are private bearer links distributed by organizers. Full archive restore requires an empty event. Read API.md for lifecycle and webhook examples."
   },
-  "servers": [{"url": "/", "description": "Same-origin local portal"}],
-  "security": [{"session": []}, {"bearer": []}],
+  "servers": [
+    {
+      "url": "/",
+      "description": "Same-origin local portal"
+    }
+  ],
+  "security": [
+    {
+      "session": []
+    },
+    {
+      "bearer": []
+    }
+  ],
   "components": {
     "securitySchemes": {
-      "session": {"type": "apiKey", "in": "cookie", "name": "session"},
-      "bearer": {"type": "http", "scheme": "bearer"}
+      "session": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "session"
+      },
+      "bearer": {
+        "type": "http",
+        "scheme": "bearer"
+      }
     },
     "parameters": {
-      "eventId": {"name": "event_id", "in": "path", "required": true, "schema": {"type": "string"}},
-      "projectId": {"name": "project_id", "in": "path", "required": true, "schema": {"type": "string"}},
-      "assignmentId": {"name": "assignment_id", "in": "path", "required": true, "schema": {"type": "string"}},
-      "judgeId": {"name": "judge_id", "in": "path", "required": true, "schema": {"type": "string"}}
+      "eventId": {
+        "name": "event_id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string"
+        }
+      },
+      "projectId": {
+        "name": "project_id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string"
+        }
+      },
+      "assignmentId": {
+        "name": "assignment_id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string"
+        }
+      },
+      "judgeId": {
+        "name": "judge_id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string"
+        }
+      }
     },
     "schemas": {
-      "EventCreate": {"type": "object", "required": ["name", "starts_at", "submissions_close", "tracks"], "properties": {"name": {"type": "string"}, "description": {"type": "string"}, "starts_at": {"type": "string", "format": "date-time"}, "submissions_close": {"type": "string", "format": "date-time"}, "judging_close": {"type": ["string", "null"], "format": "date-time"}, "voting_close": {"type": ["string", "null"], "format": "date-time"}, "tracks": {"type": "array", "items": {"type": "string"}}, "prizes": {"type": "array", "items": {"type": "object"}}}},
-      "ProjectWrite": {"type": "object", "properties": {"team_id": {"type": "string"}, "track_id": {"type": "string"}, "title": {"type": "string"}, "summary": {"type": "string"}, "tagline": {"type": "string"}, "description": {"type": "string"}, "thumbnail_url": {"type": "string", "format": "uri"}, "image_urls": {"type": "array", "items": {"type": "string", "format": "uri"}}, "demo_url": {"type": "string", "format": "uri"}, "live_url": {"type": "string", "format": "uri"}, "repo_url": {"type": "string", "format": "uri"}, "tech_tags": {"type": "array", "items": {"type": "string"}}, "custom_answers": {"type": "object", "additionalProperties": {"type": "string"}}, "submit": {"type": "boolean"}}},
-      "ReviewWrite": {"type": "object", "required": ["scores", "submit"], "properties": {"scores": {"type": "object", "additionalProperties": {"type": "number"}}, "comment": {"type": "string"}, "submit": {"type": "boolean"}}},
-      "BulkImport": {"type": "object", "properties": {"tracks": {"type": "array", "items": {"type": "object"}}, "teams": {"type": "array", "items": {"type": "object"}}, "projects": {"type": "array", "items": {"type": "object"}}}}
+      "EventCreate": {
+        "type": "object",
+        "required": [
+          "name",
+          "starts_at",
+          "submissions_close",
+          "tracks"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "starts_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "submissions_close": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "judging_close": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "voting_close": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "tracks": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "prizes": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        }
+      },
+      "ProjectWrite": {
+        "type": "object",
+        "properties": {
+          "team_id": {
+            "type": "string"
+          },
+          "track_id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "tagline": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "thumbnail_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "image_urls": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uri"
+            }
+          },
+          "demo_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "live_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "repo_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "tech_tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "custom_answers": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string",
+              "maxLength": 2000
+            }
+          },
+          "submit": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ReviewWrite": {
+        "type": "object",
+        "required": [
+          "scores",
+          "submit"
+        ],
+        "properties": {
+          "scores": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            }
+          },
+          "comment": {
+            "type": "string"
+          },
+          "submit": {
+            "type": "boolean"
+          }
+        }
+      },
+      "BulkImport": {
+        "type": "object",
+        "properties": {
+          "tracks": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "teams": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "projects": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        }
+      },
+      "Empty": {
+        "type": "object",
+        "properties": {}
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "Registration": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 2
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 10
+          },
+          "invite_token": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "email",
+          "password"
+        ]
+      },
+      "Login": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "password": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ]
+      },
+      "EventUpdate": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "starts_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "submissions_close": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "judging_close": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "voting_close": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "open",
+              "judging",
+              "voting"
+            ]
+          }
+        }
+      },
+      "TrackCreate": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "PrizeCreate": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "title"
+        ]
+      },
+      "RoleGrant": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "participant",
+              "judge",
+              "organizer"
+            ]
+          },
+          "track_ids": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "null: event-wide; array: allowed track IDs; []: no judging tracks."
+          }
+        },
+        "required": [
+          "email",
+          "role"
+        ]
+      },
+      "TeamCreate": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "CommentWrite": {
+        "type": "object",
+        "properties": {
+          "body": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "body"
+        ]
+      },
+      "CommentModeration": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "visible",
+              "hidden"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "Criterion": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "label": {
+            "type": "string"
+          },
+          "weight": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 100
+          },
+          "min_score": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5,
+            "default": 1
+          },
+          "max_score": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5,
+            "default": 5
+          }
+        },
+        "required": [
+          "code",
+          "label",
+          "weight"
+        ]
+      },
+      "RubricWrite": {
+        "type": "object",
+        "properties": {
+          "criteria": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 20,
+            "items": {
+              "$ref": "#/components/schemas/Criterion"
+            }
+          }
+        },
+        "required": [
+          "criteria"
+        ]
+      },
+      "AssignmentCreate": {
+        "type": "object",
+        "properties": {
+          "project_id": {
+            "type": "string"
+          },
+          "judge_user_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "judge_user_id"
+        ]
+      },
+      "BatchAssignment": {
+        "type": "object",
+        "properties": {
+          "reviews_per_project": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10,
+            "default": 3
+          }
+        }
+      },
+      "VoteWrite": {
+        "type": "object",
+        "properties": {
+          "project_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id"
+        ]
+      },
+      "VotingPolicy": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "authenticated",
+              "invitation"
+            ]
+          }
+        },
+        "required": [
+          "mode"
+        ]
+      },
+      "VoterInvitation": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email"
+          }
+        },
+        "required": [
+          "email"
+        ]
+      },
+      "Question": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$",
+            "maxLength": 80
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          },
+          "required": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "code",
+          "label"
+        ]
+      },
+      "QuestionsWrite": {
+        "type": "object",
+        "properties": {
+          "questions": {
+            "type": "array",
+            "maxItems": 20,
+            "items": {
+              "$ref": "#/components/schemas/Question"
+            }
+          }
+        },
+        "required": [
+          "questions"
+        ]
+      },
+      "WebhookCreate": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "HTTPS URL, or HTTP on localhost/127.0.0.1/::1."
+          }
+        },
+        "required": [
+          "url"
+        ]
+      },
+      "WebhookUpdate": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "active"
+        ]
+      },
+      "WebhookEvent": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "event_id": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "actor_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "target_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "detail": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "event_id",
+          "action",
+          "at"
+        ]
+      },
+      "ProjectCreate": {
+        "type": "object",
+        "properties": {
+          "team_id": {
+            "type": "string"
+          },
+          "track_id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "tagline": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "thumbnail_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "image_urls": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uri"
+            }
+          },
+          "demo_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "live_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "repo_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "tech_tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "custom_answers": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "submit": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "team_id",
+          "track_id",
+          "title"
+        ]
+      },
+      "EventArchive": {
+        "type": "object",
+        "properties": {
+          "schema": {
+            "type": "string",
+            "const": "dogfood-event-v1"
+          },
+          "event": {
+            "type": "object"
+          },
+          "exported_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "users": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "tracks": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "prizes": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "teams": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "team_members": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "projects": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "project_details": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "event_questions": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "rubrics": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "criteria": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "assignments": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "reviews": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "criterion_scores": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "result_snapshots": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "votes": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "comments": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "event_roles": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "judge_track_scopes": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "voting_policies": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "voter_access": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "audit_events": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "issued_records": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "archive_provenance": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        },
+        "required": [
+          "schema",
+          "event",
+          "users",
+          "tracks",
+          "teams",
+          "projects"
+        ],
+        "description": "Use an unmodified export.json response. Relational IDs are remapped transactionally. Historical accounts are matched by email or locked pending an organizer invitation. Existing credentials and global admin privileges are never overwritten. Includes complete score, voting, comment and publication history; records are newly signed by the destination."
+      },
+      "ArchiveImport": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/EventArchive"
+          },
+          {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BulkImport"
+              },
+              {
+                "not": {
+                  "required": [
+                    "schema"
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      }
     }
   },
   "paths": {
-    "/api/openapi.json": {"get": {"summary": "OpenAPI description", "security": [], "responses": {"200": {"description": "This document"}}}},
-    "/api/me": {"get": {"summary": "Current user and event roles", "security": [], "responses": {"200": {"description": "User or null"}}}},
-    "/api/register": {"post": {"summary": "Register a local account", "security": [], "responses": {"201": {"description": "Session cookie issued"}}}},
-    "/api/login": {"post": {"summary": "Create a local session", "security": [], "responses": {"200": {"description": "Session cookie issued"}}}},
-    "/api/logout": {"post": {"summary": "Revoke the current session", "responses": {"200": {"description": "Session revoked"}}}},
-    "/api/events": {"get": {"summary": "List events and caller capabilities", "security": [], "responses": {"200": {"description": "Events"}}}, "post": {"summary": "Create an event and become its organizer", "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/EventCreate"}}}}, "responses": {"201": {"description": "Event created"}}}},
-    "/api/events/{event_id}": {"parameters": [{"$ref": "#/components/parameters/eventId"}], "get": {"summary": "Event detail, tracks and prizes", "security": [], "responses": {"200": {"description": "Event detail"}}}, "patch": {"summary": "Organizer updates event configuration and phase", "responses": {"200": {"description": "Updated"}}}},
-    "/api/events/{event_id}/tracks": {"parameters": [{"$ref": "#/components/parameters/eventId"}], "post": {"summary": "Add a track (organizer)", "responses": {"201": {"description": "Track created"}}}},
-    "/api/events/{event_id}/prizes": {"parameters": [{"$ref": "#/components/parameters/eventId"}], "post": {"summary": "Add a prize (organizer)", "responses": {"201": {"description": "Prize created"}}}},
-    "/api/events/{event_id}/roles": {"parameters": [{"$ref": "#/components/parameters/eventId"}], "post": {"summary": "Assign an existing user an event role (organizer)", "responses": {"200": {"description": "Role assigned"}}}},
-    "/api/events/{event_id}/role-invites": {"parameters": [{"$ref": "#/components/parameters/eventId"}], "post": {"summary": "Create an email-bound role invitation (organizer)", "responses": {"201": {"description": "Invitation link"}}}},
-    "/api/role-invites/{token}/accept": {"parameters": [{"in": "path", "name": "token", "required": true, "schema": {"type": "string"}}], "post": {"summary": "Accept an event role invitation", "responses": {"200": {"description": "Role accepted"}}}},
-    "/api/events/{event_id}/teams": {"parameters": [{"$ref": "#/components/parameters/eventId"}], "get": {"summary": "List teams, including caller membership", "responses": {"200": {"description": "Teams"}}}, "post": {"summary": "Create a team during submissions", "responses": {"201": {"description": "Team created"}}}},
-    "/api/teams/{team_id}/invites": {"parameters": [{"in": "path", "name": "team_id", "required": true, "schema": {"type": "string"}}], "post": {"summary": "Create a team invitation", "responses": {"201": {"description": "Invitation link"}}}},
-    "/api/invites/{token}/accept": {"parameters": [{"in": "path", "name": "token", "required": true, "schema": {"type": "string"}}], "post": {"summary": "Join a team with an invitation", "responses": {"200": {"description": "Joined"}}}},
-    "/api/events/{event_id}/projects": {"parameters": [{"$ref": "#/components/parameters/eventId"}], "get": {"summary": "List submitted projects and caller-owned drafts", "security": [], "responses": {"200": {"description": "Projects"}}}, "post": {"summary": "Create a project draft or submission before deadline", "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ProjectWrite"}}}}, "responses": {"201": {"description": "Project created"}}}},
-    "/api/projects/{project_id}": {"parameters": [{"$ref": "#/components/parameters/projectId"}], "get": {"summary": "Read a submitted project or own draft", "security": [], "responses": {"200": {"description": "Project"}}}, "patch": {"summary": "Edit own team project before deadline", "responses": {"200": {"description": "Updated"}}}},
-    "/api/projects/{project_id}/submit": {"parameters": [{"$ref": "#/components/parameters/projectId"}], "post": {"summary": "Submit own team draft before deadline", "responses": {"200": {"description": "Submitted"}}}},
-    "/api/projects/{project_id}/comments": {"parameters": [{"$ref": "#/components/parameters/projectId"}], "get": {"summary": "List visible project comments", "security": [], "responses": {"200": {"description": "Comments"}}}, "post": {"summary": "Post an account-limited comment", "responses": {"201": {"description": "Comment posted"}}}},
-    "/api/comments/{comment_id}": {"parameters": [{"in": "path", "name": "comment_id", "required": true, "schema": {"type": "string"}}], "patch": {"summary": "Hide or restore a comment (organizer)", "responses": {"200": {"description": "Moderated"}}}},
-    "/api/events/{event_id}/rubric": {"parameters": [{"$ref": "#/components/parameters/eventId"}], "get": {"summary": "Get active weighted rubric", "responses": {"200": {"description": "Rubric"}}}, "post": {"summary": "Create a new rubric version (organizer)", "responses": {"201": {"description": "Rubric activated"}}}},
-    "/api/events/{event_id}/judges": {"parameters": [{"$ref": "#/components/parameters/eventId"}], "get": {"summary": "List event judges (organizer)", "responses": {"200": {"description": "Judges"}}}},
-    "/api/events/{event_id}/assignments": {"parameters": [{"$ref": "#/components/parameters/eventId"}], "get": {"summary": "List judge assignments (organizer)", "responses": {"200": {"description": "Assignments"}}}, "post": {"summary": "Assign a submitted project to a judge (organizer)", "responses": {"201": {"description": "Assigned"}}}},
-    "/api/judges/{judge_id}/scores": {"parameters": [{"$ref": "#/components/parameters/judgeId"}], "get": {"summary": "Judge sees only own assignments and scores", "responses": {"200": {"description": "Own scores"}, "403": {"description": "Peer scores denied"}}}},
-    "/api/assignments/{assignment_id}/review": {"parameters": [{"$ref": "#/components/parameters/assignmentId"}], "put": {"summary": "Save or submit own assigned review", "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ReviewWrite"}}}}, "responses": {"200": {"description": "Review saved"}}}},
-    "/api/events/{event_id}/progress": {"parameters": [{"$ref": "#/components/parameters/eventId"}], "get": {"summary": "Live judge completion by judge (organizer)", "responses": {"200": {"description": "Progress"}}}},
-    "/api/events/{event_id}/reviews": {"parameters": [{"$ref": "#/components/parameters/eventId"}], "get": {"summary": "Individual reviews and weighted raw scores (organizer)", "responses": {"200": {"description": "Reviews"}}}},
-    "/api/events/{event_id}/results": {"parameters": [{"$ref": "#/components/parameters/eventId"}], "get": {"summary": "Organizer preview or published result snapshot", "security": [], "responses": {"200": {"description": "Results"}, "403": {"description": "Unpublished results hidden"}}}},
-    "/api/events/{event_id}/publish": {"parameters": [{"$ref": "#/components/parameters/eventId"}], "post": {"summary": "Freeze results and issue signed records (organizer)", "responses": {"200": {"description": "Published"}}}},
-    "/api/events/{event_id}/ballot": {"parameters": [{"$ref": "#/components/parameters/eventId"}], "get": {"summary": "Randomized active community ballot", "responses": {"200": {"description": "Ballot"}}}},
-    "/api/events/{event_id}/votes": {"parameters": [{"$ref": "#/components/parameters/eventId"}], "post": {"summary": "Cast one account vote", "responses": {"201": {"description": "Vote recorded"}}}},
-    "/api/events/{event_id}/community-results": {"parameters": [{"$ref": "#/components/parameters/eventId"}], "get": {"summary": "Community totals after release", "security": [], "responses": {"200": {"description": "Totals"}, "403": {"description": "Embargoed"}}}},
-    "/api/events/{event_id}/audit": {"parameters": [{"$ref": "#/components/parameters/eventId"}], "get": {"summary": "Event audit log (organizer)", "responses": {"200": {"description": "Audit events"}}}},
-    "/api/events/{event_id}/export.csv": {"parameters": [{"$ref": "#/components/parameters/eventId"}], "get": {"summary": "Results CSV at any stage (organizer)", "responses": {"200": {"description": "CSV download"}}}},
-    "/api/events/{event_id}/export.json": {"parameters": [{"$ref": "#/components/parameters/eventId"}], "get": {"summary": "Complete event data archive without credentials (organizer)", "responses": {"200": {"description": "JSON download"}}}},
-    "/api/events/{event_id}/import.json": {"parameters": [{"$ref": "#/components/parameters/eventId"}], "post": {"summary": "Atomic bulk import of teams and projects into an unpublished event", "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/BulkImport"}}}}, "responses": {"201": {"description": "Import counts"}}}},
-    "/api/events/{event_id}/records": {"parameters": [{"$ref": "#/components/parameters/eventId"}], "get": {"summary": "Issued project certificates and judge records (organizer)", "responses": {"200": {"description": "Records"}}}},
-    "/api/events/{event_id}/my-records": {"parameters": [{"$ref": "#/components/parameters/eventId"}], "get": {"summary": "Caller’s issued judge and team records", "responses": {"200": {"description": "Records"}}}},
-    "/api/records/{record_id}": {"get": {"summary": "Publicly verify a signed record using its sig query value", "security": [], "parameters": [{"name": "sig", "in": "query", "required": true, "schema": {"type": "string"}}], "responses": {"200": {"description": "Verified payload"}, "403": {"description": "Invalid signature"}}}},
-    "/api/events/{event_id}/webhooks": {"parameters": [{"$ref": "#/components/parameters/eventId"}], "get": {"summary": "List webhook configuration without secrets (organizer)", "responses": {"200": {"description": "Webhooks"}}}, "post": {"summary": "Create a webhook and receive its signing secret once", "responses": {"201": {"description": "Webhook and secret"}}}},
-    "/api/events/{event_id}/webhooks/{webhook_id}": {"parameters": [{"$ref": "#/components/parameters/eventId"}], "patch": {"summary": "Enable or pause a webhook (organizer)", "responses": {"200": {"description": "Status"}}}, "delete": {"summary": "Pause a webhook (organizer)", "responses": {"200": {"description": "Paused"}}}},
-    "/api/events/{event_id}/webhooks/deliveries": {"parameters": [{"$ref": "#/components/parameters/eventId"}], "get": {"summary": "Webhook delivery audit (organizer)", "responses": {"200": {"description": "Deliveries"}}}},
-    "/api/events/{event_id}/webhooks/deliveries/retry": {"parameters": [{"$ref": "#/components/parameters/eventId"}], "post": {"summary": "Retry pending webhook deliveries (organizer)", "responses": {"200": {"description": "Queued"}}}}
+    "/api/openapi.json": {
+      "get": {
+        "summary": "OpenAPI description",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "This document",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "get_api_openapi_json"
+      }
+    },
+    "/api/me": {
+      "get": {
+        "summary": "Current user and event roles",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "User or null",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "get_api_me"
+      }
+    },
+    "/api/register": {
+      "post": {
+        "summary": "Register a local account",
+        "security": [],
+        "responses": {
+          "201": {
+            "description": "Session cookie issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "post_api_register",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Registration"
+              },
+              "example": {
+                "name": "Alex Example",
+                "email": "alex@example.org",
+                "password": "a-long-local-password"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/login": {
+      "post": {
+        "summary": "Create a local session",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Session cookie issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "post_api_login",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Login"
+              },
+              "example": {
+                "email": "organizer@demo.local",
+                "password": "dogfood-demo-2026"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/logout": {
+      "post": {
+        "summary": "Revoke the current session",
+        "responses": {
+          "200": {
+            "description": "Session revoked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "post_api_logout",
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Empty"
+              },
+              "example": {}
+            }
+          }
+        }
+      }
+    },
+    "/api/events": {
+      "get": {
+        "summary": "List events and caller capabilities",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Events",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "get_api_events"
+      },
+      "post": {
+        "summary": "Create an event and become its organizer",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EventCreate"
+              },
+              "example": {
+                "name": "Example Hack",
+                "starts_at": "2026-09-26T18:00:00Z",
+                "submissions_close": "2026-09-29T18:00:00Z",
+                "tracks": [
+                  "Open"
+                ],
+                "prizes": [
+                  {
+                    "title": "Best project"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Event created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "post_api_events"
+      }
+    },
+    "/api/events/{event_id}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/eventId"
+        }
+      ],
+      "get": {
+        "summary": "Event detail, tracks and prizes",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Event detail",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "get_api_events_event_id"
+      },
+      "patch": {
+        "summary": "Organizer updates event configuration and phase",
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "patch_api_events_event_id",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EventUpdate"
+              },
+              "example": {
+                "status": "judging"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/events/{event_id}/tracks": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/eventId"
+        }
+      ],
+      "post": {
+        "summary": "Add a track (organizer)",
+        "responses": {
+          "201": {
+            "description": "Track created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "post_api_events_event_id_tracks",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TrackCreate"
+              },
+              "example": {
+                "name": "Hardware"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/events/{event_id}/prizes": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/eventId"
+        }
+      ],
+      "post": {
+        "summary": "Add a prize (organizer)",
+        "responses": {
+          "201": {
+            "description": "Prize created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "post_api_events_event_id_prizes",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrizeCreate"
+              },
+              "example": {
+                "title": "Best build",
+                "description": "Working end-to-end"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/events/{event_id}/roles": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/eventId"
+        }
+      ],
+      "post": {
+        "summary": "Assign an existing user an event role (organizer)",
+        "responses": {
+          "200": {
+            "description": "Role assigned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "post_api_events_event_id_roles",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoleGrant"
+              },
+              "example": {
+                "email": "judge@example.org",
+                "role": "judge",
+                "track_ids": [
+                  "trk_example"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/events/{event_id}/role-invites": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/eventId"
+        }
+      ],
+      "post": {
+        "summary": "Create an email-bound role invitation (organizer)",
+        "responses": {
+          "201": {
+            "description": "Invitation link",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "post_api_events_event_id_role_invites",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoleGrant"
+              },
+              "example": {
+                "email": "judge@example.org",
+                "role": "judge",
+                "track_ids": [
+                  "trk_example"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/role-invites/{token}/accept": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "token",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "post": {
+        "summary": "Accept an event role invitation",
+        "responses": {
+          "200": {
+            "description": "Role accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "post_api_role_invites_token_accept",
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Empty"
+              },
+              "example": {}
+            }
+          }
+        }
+      }
+    },
+    "/api/events/{event_id}/teams": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/eventId"
+        }
+      ],
+      "get": {
+        "summary": "List teams, including caller membership",
+        "responses": {
+          "200": {
+            "description": "Teams",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "get_api_events_event_id_teams"
+      },
+      "post": {
+        "summary": "Create a team during submissions",
+        "responses": {
+          "201": {
+            "description": "Team created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "post_api_events_event_id_teams",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TeamCreate"
+              },
+              "example": {
+                "name": "Nightshift"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/teams/{team_id}/invites": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "team_id",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "post": {
+        "summary": "Create a team invitation",
+        "responses": {
+          "201": {
+            "description": "Invitation link",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "post_api_teams_team_id_invites",
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Empty"
+              },
+              "example": {}
+            }
+          }
+        }
+      }
+    },
+    "/api/invites/{token}/accept": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "token",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "post": {
+        "summary": "Join a team with an invitation",
+        "responses": {
+          "200": {
+            "description": "Joined",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "post_api_invites_token_accept",
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Empty"
+              },
+              "example": {}
+            }
+          }
+        }
+      }
+    },
+    "/api/events/{event_id}/projects": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/eventId"
+        }
+      ],
+      "get": {
+        "summary": "List submitted projects and caller-owned drafts",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Projects",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "get_api_events_event_id_projects",
+        "parameters": []
+      },
+      "post": {
+        "summary": "Create a project draft or submission before deadline",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectCreate"
+              },
+              "example": {
+                "team_id": "tm_example",
+                "track_id": "trk_example",
+                "title": "Quiet Hours",
+                "summary": "Less noise.",
+                "submit": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Project created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "post_api_events_event_id_projects"
+      }
+    },
+    "/api/projects/{project_id}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/projectId"
+        }
+      ],
+      "get": {
+        "summary": "Read a submitted project or own draft",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Project",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "get_api_projects_project_id"
+      },
+      "patch": {
+        "summary": "Edit own team project before deadline",
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "patch_api_projects_project_id",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectWrite"
+              },
+              "example": {
+                "description": "The problem and our approach.",
+                "tech_tags": [
+                  "Python"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/{project_id}/submit": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/projectId"
+        }
+      ],
+      "post": {
+        "summary": "Submit own team draft before deadline",
+        "responses": {
+          "200": {
+            "description": "Submitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "post_api_projects_project_id_submit",
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Empty"
+              },
+              "example": {}
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/{project_id}/comments": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/projectId"
+        }
+      ],
+      "get": {
+        "summary": "List visible project comments",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Comments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "get_api_projects_project_id_comments"
+      },
+      "post": {
+        "summary": "Post an account-limited comment",
+        "responses": {
+          "201": {
+            "description": "Comment posted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "post_api_projects_project_id_comments",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommentWrite"
+              },
+              "example": {
+                "body": "The demo works well."
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/comments/{comment_id}": {
+      "parameters": [
+        {
+          "in": "path",
+          "name": "comment_id",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "patch": {
+        "summary": "Hide or restore a comment (organizer)",
+        "responses": {
+          "200": {
+            "description": "Moderated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "patch_api_comments_comment_id",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommentModeration"
+              },
+              "example": {
+                "status": "hidden"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/events/{event_id}/rubric": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/eventId"
+        }
+      ],
+      "get": {
+        "summary": "Get active weighted rubric",
+        "responses": {
+          "200": {
+            "description": "Rubric",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "get_api_events_event_id_rubric"
+      },
+      "post": {
+        "summary": "Create a new rubric version (organizer)",
+        "responses": {
+          "201": {
+            "description": "Rubric activated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "post_api_events_event_id_rubric",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RubricWrite"
+              },
+              "example": {
+                "criteria": [
+                  {
+                    "code": "quality",
+                    "label": "Quality",
+                    "weight": 2,
+                    "min_score": 1,
+                    "max_score": 5
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/events/{event_id}/judges": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/eventId"
+        }
+      ],
+      "get": {
+        "summary": "List event judges (organizer)",
+        "responses": {
+          "200": {
+            "description": "Judges",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "get_api_events_event_id_judges"
+      }
+    },
+    "/api/events/{event_id}/assignments": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/eventId"
+        }
+      ],
+      "get": {
+        "summary": "List judge assignments (organizer)",
+        "responses": {
+          "200": {
+            "description": "Assignments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "get_api_events_event_id_assignments"
+      },
+      "post": {
+        "summary": "Assign a submitted project to a judge (organizer)",
+        "responses": {
+          "201": {
+            "description": "Assigned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "post_api_events_event_id_assignments",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignmentCreate"
+              },
+              "example": {
+                "project_id": "prj_example",
+                "judge_user_id": "user_example"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/judges/{judge_id}/scores": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/judgeId"
+        }
+      ],
+      "get": {
+        "summary": "Judge sees only own assignments and scores",
+        "responses": {
+          "200": {
+            "description": "Own scores",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Peer scores denied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "get_api_judges_judge_id_scores"
+      }
+    },
+    "/api/assignments/{assignment_id}/review": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/assignmentId"
+        }
+      ],
+      "put": {
+        "summary": "Save or submit own assigned review",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewWrite"
+              },
+              "example": {
+                "scores": {
+                  "functionality": 4,
+                  "quality": 3,
+                  "innovation": 5
+                },
+                "comment": "Working demo.",
+                "submit": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Review saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "put_api_assignments_assignment_id_review"
+      }
+    },
+    "/api/events/{event_id}/progress": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/eventId"
+        }
+      ],
+      "get": {
+        "summary": "Live judge completion by judge (organizer)",
+        "responses": {
+          "200": {
+            "description": "Progress",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "get_api_events_event_id_progress"
+      }
+    },
+    "/api/events/{event_id}/reviews": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/eventId"
+        }
+      ],
+      "get": {
+        "summary": "Individual reviews and weighted raw scores (organizer)",
+        "responses": {
+          "200": {
+            "description": "Reviews",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "get_api_events_event_id_reviews"
+      }
+    },
+    "/api/events/{event_id}/results": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/eventId"
+        }
+      ],
+      "get": {
+        "summary": "Organizer preview or published result snapshot",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Unpublished results hidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "get_api_events_event_id_results"
+      }
+    },
+    "/api/events/{event_id}/publish": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/eventId"
+        }
+      ],
+      "post": {
+        "summary": "Freeze results and issue signed records (organizer)",
+        "responses": {
+          "200": {
+            "description": "Published",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "post_api_events_event_id_publish",
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Empty"
+              },
+              "example": {}
+            }
+          }
+        }
+      }
+    },
+    "/api/events/{event_id}/ballot": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/eventId"
+        }
+      ],
+      "get": {
+        "summary": "Randomized active community ballot",
+        "responses": {
+          "200": {
+            "description": "Ballot",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "get_api_events_event_id_ballot"
+      }
+    },
+    "/api/events/{event_id}/votes": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/eventId"
+        }
+      ],
+      "post": {
+        "summary": "Cast one account vote",
+        "responses": {
+          "201": {
+            "description": "Vote recorded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "post_api_events_event_id_votes",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VoteWrite"
+              },
+              "example": {
+                "project_id": "prj_example"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/events/{event_id}/community-results": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/eventId"
+        }
+      ],
+      "get": {
+        "summary": "Community totals after release",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Totals",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Embargoed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "get_api_events_event_id_community_results"
+      }
+    },
+    "/api/events/{event_id}/audit": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/eventId"
+        }
+      ],
+      "get": {
+        "summary": "Event audit log (organizer)",
+        "responses": {
+          "200": {
+            "description": "Audit events",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "get_api_events_event_id_audit"
+      }
+    },
+    "/api/events/{event_id}/export.csv": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/eventId"
+        }
+      ],
+      "get": {
+        "summary": "Results CSV at any stage (organizer)",
+        "responses": {
+          "200": {
+            "description": "CSV download",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "get_api_events_event_id_export_csv"
+      }
+    },
+    "/api/events/{event_id}/export.json": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/eventId"
+        }
+      ],
+      "get": {
+        "summary": "Complete event data archive without credentials (organizer)",
+        "responses": {
+          "200": {
+            "description": "JSON download",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventArchive"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "get_api_events_event_id_export_json"
+      }
+    },
+    "/api/events/{event_id}/import.json": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/eventId"
+        }
+      ],
+      "post": {
+        "summary": "Restore a complete archive into a new empty event, or import partial teams/projects",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ArchiveImport"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Import counts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "post_api_events_event_id_import_json"
+      }
+    },
+    "/api/events/{event_id}/records": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/eventId"
+        }
+      ],
+      "get": {
+        "summary": "Issued project certificates and judge records (organizer)",
+        "responses": {
+          "200": {
+            "description": "Records",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "get_api_events_event_id_records"
+      }
+    },
+    "/api/events/{event_id}/my-records": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/eventId"
+        }
+      ],
+      "get": {
+        "summary": "Caller\u00e2\u20ac\u2122s issued judge and team records",
+        "responses": {
+          "200": {
+            "description": "Records",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "get_api_events_event_id_my_records"
+      }
+    },
+    "/api/records/{record_id}": {
+      "get": {
+        "summary": "Publicly verify a signed record using its sig query value",
+        "security": [],
+        "parameters": [
+          {
+            "name": "sig",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Verified payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Invalid signature",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "get_api_records_record_id"
+      },
+      "parameters": [
+        {
+          "name": "record_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    "/api/events/{event_id}/webhooks": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/eventId"
+        }
+      ],
+      "get": {
+        "summary": "List webhook configuration without secrets (organizer)",
+        "responses": {
+          "200": {
+            "description": "Webhooks",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "get_api_events_event_id_webhooks"
+      },
+      "post": {
+        "summary": "Create a webhook and receive its signing secret once",
+        "responses": {
+          "201": {
+            "description": "Webhook and secret",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "post_api_events_event_id_webhooks",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookCreate"
+              },
+              "example": {
+                "url": "https://receiver.example.org/dogfood"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/events/{event_id}/webhooks/{webhook_id}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/eventId"
+        },
+        {
+          "name": "webhook_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "patch": {
+        "summary": "Enable or pause a webhook (organizer)",
+        "responses": {
+          "200": {
+            "description": "Status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "patch_api_events_event_id_webhooks_webhook_id",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookUpdate"
+              },
+              "example": {
+                "active": false
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Pause a webhook (organizer)",
+        "responses": {
+          "200": {
+            "description": "Paused",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "delete_api_events_event_id_webhooks_webhook_id"
+      }
+    },
+    "/api/events/{event_id}/webhooks/deliveries": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/eventId"
+        }
+      ],
+      "get": {
+        "summary": "Webhook delivery audit (organizer)",
+        "responses": {
+          "200": {
+            "description": "Deliveries",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "get_api_events_event_id_webhooks_deliveries"
+      }
+    },
+    "/api/events/{event_id}/webhooks/deliveries/retry": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/eventId"
+        }
+      ],
+      "post": {
+        "summary": "Retry pending webhook deliveries (organizer)",
+        "responses": {
+          "200": {
+            "description": "Queued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "post_api_events_event_id_webhooks_deliveries_retry",
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Empty"
+              },
+              "example": {}
+            }
+          }
+        }
+      }
+    },
+    "/api/events/{event_id}/assignments/batch": {
+      "post": {
+        "summary": "Balance eligible judge workloads and report coverage shortfalls",
+        "responses": {
+          "201": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "post_api_events_event_id_assignments_batch",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BatchAssignment"
+              },
+              "example": {
+                "reviews_per_project": 3
+              }
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "event_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    "/api/events/{event_id}/questions": {
+      "put": {
+        "summary": "Configure ordered submission questions before the first submission",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "put_api_events_event_id_questions",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuestionsWrite"
+              },
+              "example": {
+                "questions": [
+                  {
+                    "code": "problem",
+                    "label": "What problem do you solve?",
+                    "required": true
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "event_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    "/api/events/{event_id}/voting-policy": {
+      "put": {
+        "summary": "Set voting access before the first vote",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "put_api_events_event_id_voting_policy",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VotingPolicy"
+              },
+              "example": {
+                "mode": "invitation"
+              }
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "event_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    "/api/events/{event_id}/voter-invites": {
+      "post": {
+        "summary": "Issue a private email-bound voter invitation",
+        "responses": {
+          "201": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "post_api_events_event_id_voter_invites",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VoterInvitation"
+              },
+              "example": {
+                "email": "voter@example.org"
+              }
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "event_id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    "/api/voter-invites/{token}/accept": {
+      "post": {
+        "summary": "Accept a single-use invitation as its named email account",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "JSON error. 401 missing session; 403 forbidden; 404 unknown resource; 409 conflict or closed/frozen state; 422 invalid input; 429 rate limited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "operationId": "post_api_voter_invites_token_accept",
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Empty"
+              },
+              "example": {}
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "name": "token",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ]
+    }
   }
 }
