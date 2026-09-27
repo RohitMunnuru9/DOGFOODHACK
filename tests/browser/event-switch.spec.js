@@ -1,5 +1,15 @@
 import {test, expect} from '@playwright/test';
 
+test('switching events clears the selected archive and integration form state', async ({page}) => {
+  await page.goto('/');
+  await page.getByRole('button',{name:'Organizer',exact:true}).click();
+  await page.getByLabel('Import JSON file').setInputFiles({name:'event.json',mimeType:'application/json',buffer:Buffer.from('{"teams":[]}')});
+  await expect(page.getByRole('button',{name:'Import event data',exact:true})).toBeEnabled();
+  await page.getByLabel('Select event').selectOption('evt_demo');
+  await expect(page.getByRole('button',{name:'Import event data',exact:true})).toBeDisabled();
+  await expect(page.getByLabel('Import JSON file')).toHaveValue('');
+});
+
 test('a delayed old event response cannot replace the selected workspace', async ({page}) => {
   let release;
   const hold = new Promise(resolve => { release = resolve; });
