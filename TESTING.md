@@ -45,3 +45,19 @@ npm run build
 The Python suite covers ownership, roles, deadlines, track scopes, assignment balance, required answers, rubric versions, normalization, publication, invitation-gated voting, abuse, archive restoration, webhooks, and signed records. Browser tests cover account continuity, event switching with delayed responses, assignment shortfalls, questions, archive upload, voting invitations, and a complete create–submit–judge–publish–export lifecycle. The lifecycle also captures desktop and phone screenshots, checks for page errors and horizontal page overflow, and compares public scores with the expected result.
 
 The root acceptance receipt was generated against Compose on port 18000 because a separate development server occupied port 8000 on the test host. The checked-in default configuration still uses port 8000. The published checker certifies its seven T1/T2 probes; broader tests provide additional evidence, not a guarantee that every possible input or deployment is correct.
+
+## Recorded verification on 27 September 2026
+
+| Check | Result |
+| --- | --- |
+| Unmodified host checker through Docker's published port | 7/7 PASS |
+| Unmodified host checker through Next on an internal Docker network | 7/7 PASS |
+| Python API integration suite | 17 passed |
+| Browser suite against the final production Docker build | 10 passed |
+| Node storage regressions and OpenAPI validation | 3 passed |
+| Fixture normalization evidence regeneration | Exact match |
+| Production Docker image builds | API and portal succeeded |
+| Container restart | All 13 events then present retained; fixture projects remained 41 |
+| Public repository metadata | Public, main branch, MIT license |
+
+Each fix was committed and pushed separately, with its affected checks repeated after the push. Browser issues found during the combined run were fixed and the combined run repeated successfully. These are observed results from this environment; optional pairwise judging, automatic email delivery and independent offline certificate verification remain outside the implemented scope.

@@ -1,12 +1,35 @@
-# Five-minute portal walkthrough
+# Five-minute lifecycle recording
 
-This is a recording script for the local portal. Start the two services or `docker compose up --build`, then open the portal. Keep the recording on one newly created event so the lifecycle is clear.
+[Watch or download the recorded demo](docs/demo.webm) (WebM, 1280 × 900, 5 minutes 5 seconds, on-screen captions, no audio).
 
-1. **0:00–0:40 — Start and create.** Show `/health`, the public `/projects` gallery, and Admin → Events. Create an event with a start time in the past, submissions closing at least 20 minutes in the future, one track, and one prize. The new event receives a default weighted rubric.
-2. **0:40–1:30 — Team and project.** Switch to Contestant → Submit, select the new event, create a team, save a project draft with title, summary, track, repository URL, and optional media/tags. Open the draft, then use **Submit project**. Return to the gallery and show that the project is public.
-3. **1:30–2:30 — Assign and review.** Switch to Admin → Events and select the new event. Under **Add an existing account**, grant `marek.nowak@example.org` the judge role. Assign the submitted project to that judge. Switch to Jury → Reviews, select the event, enter rubric scores, and submit. Show that another judge cannot see this review through the role-scoped API.
-4. **2:30–3:25 — Publish.** In Admin → Events, change the submission close time to the past and save the event settings. Inspect the judging progress, individual reviews, and audit log. Publish results. Show the frozen results and download the CSV.
-5. **3:25–4:20 — T3 and T4.** Open the seeded `evt_vote_demo` to show randomized community ballots and comments. Return to the published event to show the signed judge record and project certificate. Open a verification link and the embeddable gallery; download the JSON archive. The OpenAPI document is at `/dogfood-api/openapi.json`.
-6. **4:20–5:00 — Operability.** Show `python run.py .dogfood.toml` returning 7/7 PASS and mention `python -m unittest discover -s tests -v`. Show the Compose file and explain that SQLite is persisted locally.
+The recording shows real browser actions against the Docker build. It creates one event and follows separate organizer, participant and judge accounts through the whole lifecycle. Captions explain the rules; they are recording overlays, not product controls.
 
-The seeded local account password is `dogfood-demo-2026`. Some dashboard panels and arcade scores are browser-local. The script is not itself a recorded video.
+| Time | What is shown |
+| --- | --- |
+| 0:00 | Local portal and explicit account sign-in |
+| 0:15 | Event creation with dates, a track and a prize |
+| 0:40 | Event judge role and track-scope controls |
+| 1:05 | Participant team creation |
+| 1:25 | Project story and private draft |
+| 1:55 | Submission and public gallery |
+| 2:15 | Balanced judge assignment |
+| 2:40 | Private weighted review |
+| 3:10 | Saved scores and normalization explanation |
+| 3:30 | Organizer progress and review completion |
+| 3:55 | Close submissions and publish a frozen result |
+| 4:15 | Download CSV and show archive controls |
+| 4:35 | Verify a signed participation certificate |
+| 4:48 | Public results without signing in |
+
+To reproduce it against a running disposable demo instance:
+
+```powershell
+npm ci
+npx playwright install chromium
+$env:DOGFOOD_TEST_URL='http://127.0.0.1:18000'
+node scripts/record-demo.mjs
+```
+
+The recorder takes about five minutes, creates real demo data, asserts key workflow outcomes, and saves `docs/demo.webm`. Use the actual Compose port for `DOGFOOD_TEST_URL`. The same lifecycle is covered by a faster automated browser test. The host acceptance receipts and broader test commands are in [TESTING.md](TESTING.md).
+
+Submit the public repository link together with this video link. If the organizer's submission form requires a hosted video service or direct upload, upload this file there and use the resulting link.
