@@ -1,0 +1,73 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "DOGFOOD Local Portal API",
+    "version": "0.2.0",
+    "description": "Local REST API for event creation, participation, judging, publication and portability. All writes use JSON. An HttpOnly session cookie or bearer token identifies the caller. Event roles are enforced by the Python service. IDs are opaque strings; times are ISO 8601 with a timezone offset."
+  },
+  "servers": [{"url": "/", "description": "Same-origin local portal"}],
+  "security": [{"session": []}, {"bearer": []}],
+  "components": {
+    "securitySchemes": {
+      "session": {"type": "apiKey", "in": "cookie", "name": "session"},
+      "bearer": {"type": "http", "scheme": "bearer"}
+    },
+    "parameters": {
+      "eventId": {"name": "event_id", "in": "path", "required": true, "schema": {"type": "string"}},
+      "projectId": {"name": "project_id", "in": "path", "required": true, "schema": {"type": "string"}},
+      "assignmentId": {"name": "assignment_id", "in": "path", "required": true, "schema": {"type": "string"}},
+      "judgeId": {"name": "judge_id", "in": "path", "required": true, "schema": {"type": "string"}}
+    },
+    "schemas": {
+      "EventCreate": {"type": "object", "required": ["name", "starts_at", "submissions_close", "tracks"], "properties": {"name": {"type": "string"}, "description": {"type": "string"}, "starts_at": {"type": "string", "format": "date-time"}, "submissions_close": {"type": "string", "format": "date-time"}, "judging_close": {"type": ["string", "null"], "format": "date-time"}, "voting_close": {"type": ["string", "null"], "format": "date-time"}, "tracks": {"type": "array", "items": {"type": "string"}}, "prizes": {"type": "array", "items": {"type": "object"}}}},
+      "ProjectWrite": {"type": "object", "properties": {"team_id": {"type": "string"}, "track_id": {"type": "string"}, "title": {"type": "string"}, "summary": {"type": "string"}, "tagline": {"type": "string"}, "description": {"type": "string"}, "thumbnail_url": {"type": "string", "format": "uri"}, "image_urls": {"type": "array", "items": {"type": "string", "format": "uri"}}, "demo_url": {"type": "string", "format": "uri"}, "live_url": {"type": "string", "format": "uri"}, "repo_url": {"type": "string", "format": "uri"}, "tech_tags": {"type": "array", "items": {"type": "string"}}, "custom_answers": {"type": "object", "additionalProperties": {"type": "string"}}, "submit": {"type": "boolean"}}},
+      "ReviewWrite": {"type": "object", "required": ["scores", "submit"], "properties": {"scores": {"type": "object", "additionalProperties": {"type": "number"}}, "comment": {"type": "string"}, "submit": {"type": "boolean"}}},
+      "BulkImport": {"type": "object", "properties": {"tracks": {"type": "array", "items": {"type": "object"}}, "teams": {"type": "array", "items": {"type": "object"}}, "projects": {"type": "array", "items": {"type": "object"}}}}
+    }
+  },
+  "paths": {
+    "/api/openapi.json": {"get": {"summary": "OpenAPI description", "security": [], "responses": {"200": {"description": "This document"}}}},
+    "/api/me": {"get": {"summary": "Current user and event roles", "security": [], "responses": {"200": {"description": "User or null"}}}},
+    "/api/register": {"post": {"summary": "Register a local account", "security": [], "responses": {"201": {"description": "Session cookie issued"}}}},
+    "/api/login": {"post": {"summary": "Create a local session", "security": [], "responses": {"200": {"description": "Session cookie issued"}}}},
+    "/api/logout": {"post": {"summary": "Revoke the current session", "responses": {"200": {"description": "Session revoked"}}}},
+    "/api/events": {"get": {"summary": "List events and caller capabilities", "security": [], "responses": {"200": {"description": "Events"}}}, "post": {"summary": "Create an event and become its organizer", "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/EventCreate"}}}}, "responses": {"201": {"description": "Event created"}}}},
+    "/api/events/{event_id}": {"parameters": [{"$ref": "#/components/parameters/eventId"}], "get": {"summary": "Event detail, tracks and prizes", "security": [], "responses": {"200": {"description": "Event detail"}}}, "patch": {"summary": "Organizer updates event configuration and phase", "responses": {"200": {"description": "Updated"}}}},
+    "/api/events/{event_id}/tracks": {"parameters": [{"$ref": "#/components/parameters/eventId"}], "post": {"summary": "Add a track (organizer)", "responses": {"201": {"description": "Track created"}}}},
+    "/api/events/{event_id}/prizes": {"parameters": [{"$ref": "#/components/parameters/eventId"}], "post": {"summary": "Add a prize (organizer)", "responses": {"201": {"description": "Prize created"}}}},
+    "/api/events/{event_id}/roles": {"parameters": [{"$ref": "#/components/parameters/eventId"}], "post": {"summary": "Assign an existing user an event role (organizer)", "responses": {"200": {"description": "Role assigned"}}}},
+    "/api/events/{event_id}/role-invites": {"parameters": [{"$ref": "#/components/parameters/eventId"}], "post": {"summary": "Create an email-bound role invitation (organizer)", "responses": {"201": {"description": "Invitation link"}}}},
+    "/api/role-invites/{token}/accept": {"parameters": [{"in": "path", "name": "token", "required": true, "schema": {"type": "string"}}], "post": {"summary": "Accept an event role invitation", "responses": {"200": {"description": "Role accepted"}}}},
+    "/api/events/{event_id}/teams": {"parameters": [{"$ref": "#/components/parameters/eventId"}], "get": {"summary": "List teams, including caller membership", "responses": {"200": {"description": "Teams"}}}, "post": {"summary": "Create a team during submissions", "responses": {"201": {"description": "Team created"}}}},
+    "/api/teams/{team_id}/invites": {"parameters": [{"in": "path", "name": "team_id", "required": true, "schema": {"type": "string"}}], "post": {"summary": "Create a team invitation", "responses": {"201": {"description": "Invitation link"}}}},
+    "/api/invites/{token}/accept": {"parameters": [{"in": "path", "name": "token", "required": true, "schema": {"type": "string"}}], "post": {"summary": "Join a team with an invitation", "responses": {"200": {"description": "Joined"}}}},
+    "/api/events/{event_id}/projects": {"parameters": [{"$ref": "#/components/parameters/eventId"}], "get": {"summary": "List submitted projects and caller-owned drafts", "security": [], "responses": {"200": {"description": "Projects"}}}, "post": {"summary": "Create a project draft or submission before deadline", "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ProjectWrite"}}}}, "responses": {"201": {"description": "Project created"}}}},
+    "/api/projects/{project_id}": {"parameters": [{"$ref": "#/components/parameters/projectId"}], "get": {"summary": "Read a submitted project or own draft", "security": [], "responses": {"200": {"description": "Project"}}}, "patch": {"summary": "Edit own team project before deadline", "responses": {"200": {"description": "Updated"}}}},
+    "/api/projects/{project_id}/submit": {"parameters": [{"$ref": "#/components/parameters/projectId"}], "post": {"summary": "Submit own team draft before deadline", "responses": {"200": {"description": "Submitted"}}}},
+    "/api/projects/{project_id}/comments": {"parameters": [{"$ref": "#/components/parameters/projectId"}], "get": {"summary": "List visible project comments", "security": [], "responses": {"200": {"description": "Comments"}}}, "post": {"summary": "Post an account-limited comment", "responses": {"201": {"description": "Comment posted"}}}},
+    "/api/comments/{comment_id}": {"parameters": [{"in": "path", "name": "comment_id", "required": true, "schema": {"type": "string"}}], "patch": {"summary": "Hide or restore a comment (organizer)", "responses": {"200": {"description": "Moderated"}}}},
+    "/api/events/{event_id}/rubric": {"parameters": [{"$ref": "#/components/parameters/eventId"}], "get": {"summary": "Get active weighted rubric", "responses": {"200": {"description": "Rubric"}}}, "post": {"summary": "Create a new rubric version (organizer)", "responses": {"201": {"description": "Rubric activated"}}}},
+    "/api/events/{event_id}/judges": {"parameters": [{"$ref": "#/components/parameters/eventId"}], "get": {"summary": "List event judges (organizer)", "responses": {"200": {"description": "Judges"}}}},
+    "/api/events/{event_id}/assignments": {"parameters": [{"$ref": "#/components/parameters/eventId"}], "get": {"summary": "List judge assignments (organizer)", "responses": {"200": {"description": "Assignments"}}}, "post": {"summary": "Assign a submitted project to a judge (organizer)", "responses": {"201": {"description": "Assigned"}}}},
+    "/api/judges/{judge_id}/scores": {"parameters": [{"$ref": "#/components/parameters/judgeId"}], "get": {"summary": "Judge sees only own assignments and scores", "responses": {"200": {"description": "Own scores"}, "403": {"description": "Peer scores denied"}}}},
+    "/api/assignments/{assignment_id}/review": {"parameters": [{"$ref": "#/components/parameters/assignmentId"}], "put": {"summary": "Save or submit own assigned review", "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ReviewWrite"}}}}, "responses": {"200": {"description": "Review saved"}}}},
+    "/api/events/{event_id}/progress": {"parameters": [{"$ref": "#/components/parameters/eventId"}], "get": {"summary": "Live judge completion by judge (organizer)", "responses": {"200": {"description": "Progress"}}}},
+    "/api/events/{event_id}/reviews": {"parameters": [{"$ref": "#/components/parameters/eventId"}], "get": {"summary": "Individual reviews and weighted raw scores (organizer)", "responses": {"200": {"description": "Reviews"}}}},
+    "/api/events/{event_id}/results": {"parameters": [{"$ref": "#/components/parameters/eventId"}], "get": {"summary": "Organizer preview or published result snapshot", "security": [], "responses": {"200": {"description": "Results"}, "403": {"description": "Unpublished results hidden"}}}},
+    "/api/events/{event_id}/publish": {"parameters": [{"$ref": "#/components/parameters/eventId"}], "post": {"summary": "Freeze results and issue signed records (organizer)", "responses": {"200": {"description": "Published"}}}},
+    "/api/events/{event_id}/ballot": {"parameters": [{"$ref": "#/components/parameters/eventId"}], "get": {"summary": "Randomized active community ballot", "responses": {"200": {"description": "Ballot"}}}},
+    "/api/events/{event_id}/votes": {"parameters": [{"$ref": "#/components/parameters/eventId"}], "post": {"summary": "Cast one account vote", "responses": {"201": {"description": "Vote recorded"}}}},
+    "/api/events/{event_id}/community-results": {"parameters": [{"$ref": "#/components/parameters/eventId"}], "get": {"summary": "Community totals after release", "security": [], "responses": {"200": {"description": "Totals"}, "403": {"description": "Embargoed"}}}},
+    "/api/events/{event_id}/audit": {"parameters": [{"$ref": "#/components/parameters/eventId"}], "get": {"summary": "Event audit log (organizer)", "responses": {"200": {"description": "Audit events"}}}},
+    "/api/events/{event_id}/export.csv": {"parameters": [{"$ref": "#/components/parameters/eventId"}], "get": {"summary": "Results CSV at any stage (organizer)", "responses": {"200": {"description": "CSV download"}}}},
+    "/api/events/{event_id}/export.json": {"parameters": [{"$ref": "#/components/parameters/eventId"}], "get": {"summary": "Complete event data archive without credentials (organizer)", "responses": {"200": {"description": "JSON download"}}}},
+    "/api/events/{event_id}/import.json": {"parameters": [{"$ref": "#/components/parameters/eventId"}], "post": {"summary": "Atomic bulk import of teams and projects into an unpublished event", "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/BulkImport"}}}}, "responses": {"201": {"description": "Import counts"}}}},
+    "/api/events/{event_id}/records": {"parameters": [{"$ref": "#/components/parameters/eventId"}], "get": {"summary": "Issued project certificates and judge records (organizer)", "responses": {"200": {"description": "Records"}}}},
+    "/api/events/{event_id}/my-records": {"parameters": [{"$ref": "#/components/parameters/eventId"}], "get": {"summary": "Caller’s issued judge and team records", "responses": {"200": {"description": "Records"}}}},
+    "/api/records/{record_id}": {"get": {"summary": "Publicly verify a signed record using its sig query value", "security": [], "parameters": [{"name": "sig", "in": "query", "required": true, "schema": {"type": "string"}}], "responses": {"200": {"description": "Verified payload"}, "403": {"description": "Invalid signature"}}}},
+    "/api/events/{event_id}/webhooks": {"parameters": [{"$ref": "#/components/parameters/eventId"}], "get": {"summary": "List webhook configuration without secrets (organizer)", "responses": {"200": {"description": "Webhooks"}}}, "post": {"summary": "Create a webhook and receive its signing secret once", "responses": {"201": {"description": "Webhook and secret"}}}},
+    "/api/events/{event_id}/webhooks/{webhook_id}": {"parameters": [{"$ref": "#/components/parameters/eventId"}], "patch": {"summary": "Enable or pause a webhook (organizer)", "responses": {"200": {"description": "Status"}}}, "delete": {"summary": "Pause a webhook (organizer)", "responses": {"200": {"description": "Paused"}}}},
+    "/api/events/{event_id}/webhooks/deliveries": {"parameters": [{"$ref": "#/components/parameters/eventId"}], "get": {"summary": "Webhook delivery audit (organizer)", "responses": {"200": {"description": "Deliveries"}}}},
+    "/api/events/{event_id}/webhooks/deliveries/retry": {"parameters": [{"$ref": "#/components/parameters/eventId"}], "post": {"summary": "Retry pending webhook deliveries (organizer)", "responses": {"200": {"description": "Queued"}}}}
+  }
+}

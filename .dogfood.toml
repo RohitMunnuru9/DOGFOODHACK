@@ -1,0 +1,19 @@
+[portal]
+base_url = "http://localhost:8000"
+
+[tiers]
+claimed = ["T1", "T2"]
+pitch = "A local-first hackathon portal with project submissions, weighted judging, and transparent results."
+
+[auth]
+organizer = "Authorization: Bearer dogfood-organizer-2026"
+judge_a = "Authorization: Bearer dogfood-judge-a-2026"
+judge_b = "Authorization: Bearer dogfood-judge-b-2026"
+participant = "Authorization: Bearer dogfood-participant-2026"
+
+[routes]
+gallery = "/projects"
+submit = "/api/events/evt_01/projects"
+judge_scores = "/api/judges/judge_jdg_08/scores"
+peer_scores = "/api/judges/judge_jdg_08/scores"
+csv_export = "/api/events/evt_01/export.csv"

@@ -1,0 +1,30 @@
+services:
+  portal:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:3000"
+    environment:
+      DOGFOOD_API_ORIGIN: http://api:8000
+    depends_on:
+      api:
+        condition: service_healthy
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    environment:
+      HOST: 0.0.0.0
+      PORT: "8000"
+      DOGFOOD_DB: /data/dogfood.sqlite3
+      DOGFOOD_DEMO_MODE: "1"
+    volumes:
+      - portal_data:/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+volumes:
+  portal_data:

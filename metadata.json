@@ -1,0 +1,5 @@
+{
+  "name": "DOGFOOD Local Portal",
+  "description": "A local hackathon portal with DOGFOOD event workflows and arcade games.",
+  "requestFramePermissions": []
+}

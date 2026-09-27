@@ -1,0 +1,360 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #c7c7cc;
+  border-radius: 3px;
+  transition: background 0.2s;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #a1a1aa;
+}
+
+/* For Firefox */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #c7c7cc rgba(0, 0, 0, 0.05);
+}
+
+body {
+  margin: 0;
+  font-family: 'Outfit', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* --- STACKER 3D GAME CSS --- */
+:root {
+  --block-height: 40px;
+}
+
+.isometric-scene {
+  transform-style: preserve-3d;
+  width: 0;
+  height: 0;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  /* Rotations applied in JS */
+}
+
+.cube {
+  position: absolute;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.cube-face {
+  position: absolute;
+  box-sizing: border-box;
+  /* Ensure no gaps by using slightly larger dimensions or outline */
+  width: 100%;
+  height: 100%;
+  background-color: currentColor;
+  /* Use backface-visibility: visible (default) so we can see inside faces if needed,
+     though for a solid cube we usually want hidden.
+     However, due to rotation directions, we might be looking at the 'back' of a div.
+     Safest to keep it visible unless we are optimizing a massive scene. */
+  backface-visibility: visible;
+}
+
+/* Top Face - Lid */
+.cube-top {
+  width: 100%;
+  height: 100%;
+  transform: translateZ(var(--block-height));
+  /* Highlight */
+  background-image: linear-gradient(rgba(255,255,255,0.15), rgba(255,255,255,0.15));
+}
+
+/* South Face (Front, Y+) */
+/* Anchor at Bottom Edge (Y=100%) of the base square */
+.cube-south {
+  width: 100%;
+  height: var(--block-height);
+  transform-origin: top;
+  top: 100%;
+  left: 0;
+  /* Rotate X 90deg makes it stand up pointing to +Z */
+  transform: rotateX(-90deg);
+  /* Wait, if I rotateX(-90), the normal points Y+. Correct. */
+  /* But the face goes to Z- (down). */
+  /* We want it to go Z+ (up). */
+  /* So we must use rotateX(90deg). Normal points -Y (backwards). */
+  /* This is why backface-visibility: hidden killed it. */
+  transform: rotateX(90deg);
+
+  /* Shadow */
+  background-image: linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.1));
+}
+
+/* East Face (Side, X+) */
+/* Anchor at Right Edge (X=100%) of the base square */
+.cube-east {
+  width: var(--block-height);
+  height: 100%;
+  transform-origin: left;
+  top: 0;
+  left: 100%;
+  /* Rotate Y -90deg makes it stand up pointing to +Z? */
+  /* RotateY(90) -> Normal +X -> folds "back" to -Z. */
+  /* RotateY(-90) -> Normal -X -> folds "front" to +Z? */
+  /* Let's trace: Normal starts Z+. */
+  /* RotateY(90): Z+ -> X+. Normal X+. Geometry lies in YZ plane. */
+  /* But we want geometry to go UP (Z+). */
+  /* If origin is Left (X=0 of face). */
+  /* Position is Left: 100% (X=Width of base). */
+  /* We want it to span Z=0 to Z=H. */
+  /* RotateY(-90) turns X axis to Z axis? */
+  /* X -> Z. */
+  /* So width (X) becomes Height (Z). */
+  /* Yes. */
+  /* Normal? Z+ -> -X. */
+  /* We look from -X? No we look from -X, -Y, +Z area? */
+  /* Camera is rotateZ(45). We look at corner between South and East. */
+  /* So we see South Face and East Face. */
+  /* South Face Normal should point Y+ ? No. */
+  /* If block is at (0,0). Camera is at (large, large, large). */
+  /* Wait, camera transform is `rotateX(60) rotateZ(45) translateZ(...)`. */
+  /* This is a "look down" camera. */
+  /* Scene is rotated. */
+  /* Effectively we are looking from South-East. */
+  /* So we need South Face (Y+) and East Face (X+). */
+  /* Their normals should point Y+ and X+. */
+  /* My transforms: */
+  /* South: rotateX(90). Normal -Y. (Backwards). */
+  /* East: rotateY(-90). Normal -X. (Backwards). */
+  /* So we are looking at the BACK of these faces. */
+  /* With backface-visibility: hidden, they vanish. */
+  /* With backface-visibility: visible, we see them (as long as color is solid). */
+
+  transform: rotateY(-90deg);
+
+  /* Darker Shadow */
+  background-image: linear-gradient(rgba(0,0,0,0.2), rgba(0,0,0,0.2));
+}
+
+
+/* Falling Animation */
+@keyframes fall {
+    0% { transform: translate3d(var(--tx), var(--ty), var(--tz)); opacity: 1; }
+    100% { transform: translate3d(var(--tx), var(--ty), -800px) rotateZ(45deg); opacity: 0; }
+}
+
+.falling-animation {
+    animation: fall 0.8s ease-in forwards;
+    pointer-events: none;
+}
+
+/* Mobile Optimizations */
+@media (max-width: 768px) {
+  body, html {
+    overflow: hidden; /* Prevent scroll on game */
+    height: 100%;
+  }
+
+  #root {
+    height: 100%;
+    overflow: hidden;
+  }
+}
+
+/* Shared dashboard atmosphere and depth. */
+.portal-atmosphere {
+  background: linear-gradient(135deg, #f0f5ff 0%, #f5f3ff 48%, #fff0f7 100%);
+}
+.portal-atmosphere__mesh {
+  position: absolute;
+  inset: 0;
+  opacity: .55;
+  background-image: radial-gradient(#7e99db 1px, transparent 1.4px);
+  background-size: 22px 22px;
+  mask-image: radial-gradient(ellipse at 5% 80%, #000, transparent 33%),
+              radial-gradient(ellipse at 95% 18%, #000, transparent 26%);
+}
+.portal-atmosphere__bloom {
+  position: absolute;
+  width: min(58vw, 780px);
+  aspect-ratio: 1;
+  border-radius: 48% 52% 58% 42%;
+  filter: blur(52px);
+  opacity: .55;
+  animation: portal-drift 20s ease-in-out infinite alternate;
+}
+.portal-atmosphere__bloom--blue {
+  top: -35%; left: -10%;
+  background: radial-gradient(circle, #b5cfff 5%, #d1d8ff 48%, transparent 72%);
+}
+.portal-atmosphere__bloom--pink {
+  right: -14%; bottom: -48%;
+  background: radial-gradient(circle, #ffc7e1 4%, #e1ceff 48%, transparent 72%);
+  animation-delay: -8s;
+}
+.portal-shell { background: transparent; }
+.portal-nav {
+  box-shadow: 0 12px 38px rgba(77, 83, 156, .1), inset 0 1px rgba(255,255,255,.85);
+  background: rgba(255,255,255,.72);
+}
+.portal-nav button { transition: transform .25s ease, box-shadow .25s ease, background .25s ease, color .25s ease; }
+.portal-nav button:hover { transform: translateY(-2px); }
+.portal-nav button:active { transform: translateY(0) scale(.97); }
+.portal-role-switcher {
+  border: 1px solid rgba(197,206,246,.9);
+  background: rgba(255,255,255,.88);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 14px 35px rgba(59,65,133,.18);
+}
+.portal-role-switcher select { background: transparent; color: #4558a2; font-weight: 800; }
+.portal-glass-card {
+  box-shadow: 0 16px 38px rgba(65, 70, 139, .11), inset 0 1px rgba(255,255,255,.75);
+  transition: box-shadow .35s ease, border-color .35s ease;
+}
+.portal-glass-card:hover {
+  border-color: rgba(179,187,248,.9);
+  box-shadow: 0 20px 48px rgba(65,70,139,.15), inset 0 1px rgba(255,255,255,.85);
+}
+
+/* DOGFOOD panels use the same indigo palette with a more expressive header. */
+.dogfood-workspace { isolation: isolate; }
+.dogfood-hero {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 28px;
+  overflow: hidden;
+  min-height: 230px;
+  padding: clamp(24px, 4vw, 42px);
+  border-radius: 32px;
+  color: white;
+  background: linear-gradient(124deg, #475f9d 0%, #6d8bd0 47%, #aa95d3 76%, #de9dc4 100%);
+  box-shadow: 0 28px 55px rgba(70,83,163,.24), inset 0 1px rgba(255,255,255,.3);
+  animation: dogfood-enter .6s cubic-bezier(.2,.8,.2,1) both;
+}
+.dogfood-hero::before {
+  content: '';
+  position: absolute;
+  width: 56%;
+  aspect-ratio: 1;
+  right: -8%;
+  bottom: -110%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,215,239,.68), rgba(180,183,255,.27) 40%, transparent 68%);
+  filter: blur(9px);
+  animation: dogfood-glow 11s ease-in-out infinite alternate;
+}
+.dogfood-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: .36;
+  background-image: radial-gradient(rgba(255,255,255,.9) 1px, transparent 1.5px);
+  background-size: 12px 12px;
+  mask-image: radial-gradient(ellipse at 96% 80%, #000, transparent 42%),
+              radial-gradient(ellipse at 7% 92%, #000, transparent 30%);
+  pointer-events: none;
+}
+.dogfood-hero__content, .dogfood-hero__switcher { position: relative; z-index: 1; }
+.dogfood-hero__content { max-width: 760px; }
+.dogfood-eyebrow {
+  display: flex; align-items: center; gap: 9px; flex-wrap: wrap;
+  font-size: 11px; font-weight: 800; letter-spacing: .2em; text-transform: uppercase;
+  color: rgba(255,255,255,.84);
+}
+.dogfood-live-dot {
+  width: 7px; height: 7px; margin-left: 5px;
+  border-radius: 50%; background: #9cffdb;
+  box-shadow: 0 0 0 5px rgba(156,255,219,.16), 0 0 18px #9cffdb;
+  animation: dogfood-pulse 2.4s ease-in-out infinite;
+}
+.dogfood-hero__title {
+  margin-top: 14px;
+  font-size: clamp(30px, 4.5vw, 54px);
+  font-weight: 900;
+  line-height: 1.05;
+  letter-spacing: -.04em;
+  text-shadow: 0 4px 22px rgba(43,54,114,.2);
+}
+.dogfood-hero__description { margin-top: 12px; max-width: 58ch; color: rgba(255,255,255,.88); font-size: 14px; }
+.dogfood-phase-rail { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px; }
+.dogfood-phase {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 7px 12px; border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.26);
+  background: rgba(255,255,255,.12);
+  backdrop-filter: blur(10px);
+  font-size: 11px; font-weight: 700; color: rgba(255,255,255,.9);
+  transition: transform .25s ease, background .25s ease;
+}
+.dogfood-phase:hover { transform: translateY(-3px); background: rgba(255,255,255,.24); }
+.dogfood-phase span { opacity: .65; font-size: 10px; }
+.dogfood-phase.is-current { background: white; color: #475baa; box-shadow: 0 8px 24px rgba(49,57,112,.17); }
+.dogfood-hero__switcher {
+  min-width: 220px; padding: 12px; border-radius: 18px;
+  background: rgba(255,255,255,.16);
+  border: 1px solid rgba(255,255,255,.32);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 10px 28px rgba(49,57,112,.13);
+}
+.dogfood-hero__switcher > span { display:block; margin: 0 0 7px 5px; font-size: 10px; font-weight: 800; letter-spacing: .16em; }
+.dogfood-hero__switcher .dogfood-input { background: rgba(255,255,255,.94); color: #35406b; }
+.dogfood-panel {
+  position: relative;
+  background: rgba(255,255,255,.83);
+  backdrop-filter: blur(16px);
+  border-color: rgba(214,220,251,.82);
+  box-shadow: 0 12px 34px rgba(69,78,143,.09), inset 0 1px rgba(255,255,255,.9);
+  transition: border-color .3s ease, box-shadow .3s ease, background .3s ease;
+  animation: dogfood-enter .55s cubic-bezier(.2,.8,.2,1) both;
+}
+.dogfood-panel:hover { border-color: rgba(178,192,247,.9); box-shadow: 0 18px 42px rgba(69,78,143,.13); }
+.dogfood-stat { overflow: hidden; animation-delay: calc(var(--stat-index) * 85ms); }
+.dogfood-stat::after {
+  content: ''; position: absolute; right: -28px; top: -32px; width: 110px; height: 110px;
+  border-radius: 50%; background: radial-gradient(circle, rgba(126,158,244,.22), transparent 68%);
+  pointer-events: none;
+}
+.dogfood-stat:nth-child(2)::after { background: radial-gradient(circle, rgba(218,141,206,.22), transparent 68%); }
+.dogfood-input { transition: background .25s ease, border-color .25s ease, box-shadow .25s ease, transform .25s ease; }
+.dogfood-input:hover { background: white; border-color: #b8c2ef; }
+.dogfood-input:focus { background: white; box-shadow: 0 0 0 4px rgba(110,130,222,.14); }
+.dogfood-button, .dogfood-secondary { transition: transform .25s ease, box-shadow .25s ease, background .25s ease; }
+.dogfood-button:hover:not(:disabled), .dogfood-secondary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 9px 20px rgba(77,87,169,.18); }
+.dogfood-button:active:not(:disabled), .dogfood-secondary:active:not(:disabled) { transform: translateY(0) scale(.98); }
+.dogfood-button { background: linear-gradient(110deg, #526dd1, #7657bd); }
+.dogfood-workspace a:focus-visible, .dogfood-workspace button:focus-visible, .portal-nav button:focus-visible {
+  outline: 3px solid #526dd1; outline-offset: 3px;
+}
+@supports (animation-timeline: view()) {
+  .dogfood-workspace .dogfood-panel {
+    animation: dogfood-enter linear both;
+    animation-timeline: view();
+    animation-range: entry 0% cover 20%;
+  }
+}
+@keyframes portal-drift { to { transform: translate(7%, 5%) rotate(14deg); } }
+@keyframes dogfood-glow { to { transform: translate(-5%, -7%) scale(1.13); } }
+@keyframes dogfood-pulse { 50% { opacity: .55; box-shadow: 0 0 0 8px rgba(156,255,219,.09), 0 0 10px #9cffdb; } }
+@keyframes dogfood-enter { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+@media (max-width: 900px) {
+  .dogfood-hero { flex-direction: column; align-items: stretch; min-height: 0; }
+  .dogfood-hero__switcher { min-width: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .portal-atmosphere__bloom, .dogfood-hero::before, .dogfood-live-dot, .dogfood-panel, .dogfood-hero { animation: none !important; }
+  .portal-nav button, .portal-glass-card, .dogfood-phase, .dogfood-input, .dogfood-button, .dogfood-secondary { transition: none !important; }
+  .dogfood-workspace .dogfood-panel { opacity: 1 !important; transform: none !important; }
+}
