@@ -34,6 +34,8 @@ docker compose -p dogfood-isolated exec -T api python /tmp/run.py /tmp/dogfood.t
 
 ## Regression coverage
 
+For the fresh website downloads and complete fixture comparison, see [the 28 September verification](docs/host-fixture-verification-2026-09-28.md). `python scripts/verify_host_fixtures.py --base-url http://localhost:8000` checks every imported fixture record and independently recalculates all CSV scores against a running demo/test instance.
+
 ```powershell
 python -B -m unittest discover -s tests -v
 node --test tests/local-store.test.mjs tests/openapi.test.mjs
