@@ -166,6 +166,11 @@ CREATE TABLE IF NOT EXISTS project_details (
  live_url TEXT NOT NULL DEFAULT '', image_urls TEXT NOT NULL DEFAULT '[]',
  tech_tags TEXT NOT NULL DEFAULT '[]', custom_answers TEXT NOT NULL DEFAULT '{}'
 );
+CREATE TABLE IF NOT EXISTS event_questions (
+ event_id TEXT NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+ code TEXT NOT NULL, label TEXT NOT NULL, required INTEGER NOT NULL DEFAULT 0,
+ position INTEGER NOT NULL, PRIMARY KEY(event_id,code)
+);
 CREATE TABLE IF NOT EXISTS rubrics (
  id TEXT PRIMARY KEY, event_id TEXT NOT NULL REFERENCES events(id) ON DELETE CASCADE,
  version INTEGER NOT NULL, active INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL,
@@ -567,6 +572,10 @@ def save_project_details(conn: sqlite3.Connection, project_id: str, body: dict) 
     if "custom_answers" in body:
         answers = body["custom_answers"]
         require(isinstance(answers, dict) and len(answers) <= 20, 422, "Up to twenty answers allowed")
+        event_id = conn.execute("SELECT event_id FROM projects WHERE id=?", (project_id,)).fetchone()[0]
+        codes = {r[0] for r in conn.execute("SELECT code FROM event_questions WHERE event_id=?", (event_id,))}
+        require(set(answers) <= codes and all(isinstance(value, str) and len(value) <= 2000 for value in answers.values()),
+                422, "Answers must match event questions and contain at most 2000 characters")
         data["custom_answers"] = json.dumps({clean(key, 80): clean(value, 2000)
                                               for key, value in answers.items()})
     conn.execute("""INSERT INTO project_details
@@ -580,6 +589,14 @@ def save_project_details(conn: sqlite3.Connection, project_id: str, body: dict) 
 
 def rowdict(row: sqlite3.Row | None) -> dict | None:
     return dict(row) if row else None
+
+
+def validate_project_answers(conn, project_id):
+    project = conn.execute("SELECT * FROM projects WHERE id=?", (project_id,)).fetchone()
+    answers = project_payload(conn, project)["custom_answers"]
+    missing = [r["label"] for r in conn.execute("SELECT * FROM event_questions WHERE event_id=? AND required=1",
+               (project["event_id"],)) if not answers.get(r["code"], "").strip()]
+    require(not missing, 422, "Required answers missing: " + ", ".join(missing))
 
 
 def csv_safe(value: object) -> str:
@@ -1078,6 +1095,8 @@ class PortalHandler(BaseHTTPRequestHandler):
                 tracks = [dict(r) for r in conn.execute("SELECT id,name FROM tracks WHERE event_id=? ORDER BY name", (event_id,))]
                 prizes = [dict(r) for r in conn.execute("SELECT id,title,description FROM prizes WHERE event_id=?", (event_id,))]
                 self.send_json(200, {"event": dict(event), "tracks": tracks, "prizes": prizes,
+                                     "questions": [dict(r) for r in conn.execute("SELECT * FROM event_questions WHERE event_id=? ORDER BY position", (event_id,))],
+                                     "questions_locked": bool(conn.execute("SELECT 1 FROM projects WHERE event_id=? AND status='submitted'", (event_id,)).fetchone()),
                                      "can_manage": can_manage(conn, user, event_id),
                                      "can_participate": role(conn, user, event_id, "participant"),
                                      "can_judge": role(conn, user, event_id, "judge")})
@@ -1114,6 +1133,26 @@ class PortalHandler(BaseHTTPRequestHandler):
                 conn.execute("UPDATE events SET " + ",".join(k + "=?" for k in updates) + " WHERE id=?",
                              [*updates.values(), event_id])
                 audit(conn, "event_update", user["id"], event_id, detail=",".join(updates))
+                self.send_json(200, {"ok": True})
+                return
+            if len(parts) == 4 and parts[3] == "questions" and method == "PUT":
+                self.must_role(conn, user, event_id, "organizer")
+                require(not event["published_at"] and now() < parse_time(event["submissions_close"]), 409,
+                        "Questions are locked after submissions close")
+                require(not conn.execute("SELECT 1 FROM projects WHERE event_id=? AND status='submitted'", (event_id,)).fetchone(),
+                        409, "Questions are locked after the first submission")
+                questions = self.body_json().get("questions")
+                require(isinstance(questions, list) and len(questions) <= 20, 422, "Supply up to twenty questions")
+                conn.execute("DELETE FROM event_questions WHERE event_id=?", (event_id,))
+                seen = set()
+                for position, question in enumerate(questions):
+                    code, label = clean(question.get("code", ""), 80), clean(question.get("label", ""), 300)
+                    require(re.fullmatch(r"[a-z][a-z0-9_]*", code) and code not in seen and label, 422,
+                            "Each question needs a unique lowercase code and a label")
+                    seen.add(code)
+                    conn.execute("INSERT INTO event_questions VALUES(?,?,?,?,?)",
+                                 (event_id, code, label, int(bool(question.get("required"))), position))
+                audit(conn, "questions_update", user["id"], event_id, detail=str(len(questions)))
                 self.send_json(200, {"ok": True})
                 return
             if len(parts) == 4 and parts[3] == "tracks" and method == "POST":
@@ -1223,6 +1262,8 @@ class PortalHandler(BaseHTTPRequestHandler):
                     (project_id, event_id, team_id, track_id, title, clean(body.get("summary", ""), 3000),
                      repo_url(body.get("repo_url", "")), status, iso() if status == "submitted" else None, iso(), iso()))
                 save_project_details(conn, project_id, body)
+                if status == "submitted":
+                    validate_project_answers(conn, project_id)
                 audit(conn, "project_create", user["id"], event_id, project_id, status)
                 self.send_json(201, {"id": project_id, "status": status})
                 return
@@ -1789,6 +1830,8 @@ class PortalHandler(BaseHTTPRequestHandler):
                 conn.execute("UPDATE projects SET " + ",".join(k + "=?" for k in updates) + " WHERE id=?",
                              [*updates.values(), project["id"]])
                 save_project_details(conn, project["id"], body)
+                if project["status"] == "submitted":
+                    validate_project_answers(conn, project["id"])
                 audit(conn, "project_edit", user["id"], project["event_id"], project["id"], ",".join(updates))
                 self.send_json(200, {"ok": True})
                 return
@@ -1796,6 +1839,7 @@ class PortalHandler(BaseHTTPRequestHandler):
                 self.must_user(user)
                 require_submission_open(event_row(conn, project["event_id"]))
                 require(is_team_member(conn, user, project["team_id"]), 403, "Not a team member")
+                validate_project_answers(conn, project["id"])
                 conn.execute("UPDATE projects SET status='submitted',submitted_at=?,updated_at=? WHERE id=?",
                              (iso(), iso(), project["id"]))
                 audit(conn, "project_submit", user["id"], project["event_id"], project["id"])

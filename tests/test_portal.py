@@ -141,6 +141,29 @@ class PortalTests(unittest.TestCase):
         owner = next(j for j in progress["judges"] if j["judge_user_id"] == "demo_participant")
         self.assertEqual(owner["assigned"], 0)
 
+    def test_custom_questions_enforce_submission_and_preserve_drafts(self):
+        org, participant = "dogfood-organizer-2026", "dogfood-participant-2026"
+        event = self.new_event()
+        path = f"/api/events/{event}/questions"
+        questions = {"questions": [{"code": "problem", "label": "Problem solved", "required": True}]}
+        self.assertEqual(self.request("PUT", path, questions, participant)[0], 403)
+        self.assertEqual(self.request("PUT", path, questions, org)[0], 200)
+        detail = self.request("GET", f"/api/events/{event}")[1]
+        self.assertEqual(detail["questions"][0]["code"], "problem")
+        team = self.request("POST", f"/api/events/{event}/teams", {"name": "Question team"}, participant)[1]["id"]
+        body = {"team_id": team, "track_id": detail["tracks"][0]["id"], "title": "Question project"}
+        self.assertEqual(self.request("POST", f"/api/events/{event}/projects", {**body, "submit": True}, participant)[0], 422)
+        status, project, _ = self.request("POST", f"/api/events/{event}/projects", body, participant)
+        self.assertEqual(status, 201)
+        project_path = f"/api/projects/{project['id']}"
+        self.assertEqual(self.request("POST", project_path+"/submit", {}, participant)[0], 422)
+        self.assertEqual(self.request("PATCH", project_path, {"custom_answers": {"unknown": "bad"}}, participant)[0], 422)
+        self.assertEqual(self.request("PATCH", project_path, {"custom_answers": {"problem": "A real problem"}}, participant)[0], 200)
+        self.assertEqual(self.request("POST", project_path+"/submit", {}, participant)[0], 200)
+        self.assertEqual(self.request("PATCH", project_path, {"custom_answers": {}}, participant)[0], 422)
+        self.assertEqual(self.request("GET", project_path)[1]["project"]["custom_answers"]["problem"], "A real problem")
+        self.assertEqual(self.request("PUT", path, {"questions": []}, org)[0], 409)
+
     def test_jury_preview_has_a_submittable_review(self):
         judge = "dogfood-judge-a-2026"
         judge_id = self.request("GET", "/api/me", token=judge)[1]["user"]["id"]

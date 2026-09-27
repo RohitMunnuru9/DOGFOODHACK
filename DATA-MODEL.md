@@ -1,5 +1,7 @@
 # Data model and movement
 
+`event_questions` stores ordered organizer-defined text questions and required flags. Drafts may have missing required answers; direct submissions, draft submission, and edits of submitted projects validate all required answers on the server. Question definitions lock after the first submission or the submission deadline. `judge_track_scopes` stores nullable event-wide or explicit track lists, and `role_invite_scopes` preserves restrictions until an invited judge accepts.
+
 `users` owns login identities; `sessions` stores hashed, expiring tokens. `events` has dates and state. `event_roles` scopes participant, judge, and organizer roles to one event; `users.is_admin` is platform-wide. `tracks` and `prizes` belong to events.
 
 `teams` has a creator, `team_members` has unique membership per team, and `team_invites` contains hashed expiring links with use counts. `role_invites` binds an expiring single-use link to an email, event, and role. The API also prevents one user joining two teams in the same event and caps teams at four people.

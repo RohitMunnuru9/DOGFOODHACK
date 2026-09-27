@@ -11,6 +11,7 @@ const dateLabel = value => value ? new Date(value).toLocaleString() : 'Not set';
 const projectFormValues = form => {
   const values = Object.fromEntries(new FormData(form));
   return {...values,
+    custom_answers: Object.fromEntries(Object.entries(values).filter(([key])=>key.startsWith('answer.')).map(([key,value])=>[key.slice(7),value])),
     tech_tags: String(values.tech_tags || '').split(',').map(item=>item.trim()).filter(Boolean),
     image_urls: String(values.image_urls || '').split(/[\n,]/).map(item=>item.trim()).filter(Boolean)};
 };
@@ -232,6 +233,7 @@ function DogfoodContent({role}) {
   const [judges, setJudges] = useState([]);
   const [assignments, setAssignments] = useState([]);
   const [batchResult, setBatchResult] = useState(null);
+  const [questions, setQuestions] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [rubric, setRubric] = useState(null);
   const [criteria, setCriteria] = useState([]);
@@ -328,6 +330,7 @@ function DogfoodContent({role}) {
     return () => clearInterval(interval);
   }, [role, eventId]);
   useEffect(() => { setCriteria(rubric?.criteria?.map(c => ({code:c.code,label:c.label,weight:c.weight,min_score:c.min_score,max_score:c.max_score})) || []); }, [rubric?.rubric?.id]);
+  useEffect(() => { setQuestions(detail?.questions || []); }, [detail]);
 
   const event = detail?.event;
   const submissionsOpen = event?.status === 'open' && Date.now() >= new Date(event.starts_at).getTime() &&
@@ -382,6 +385,16 @@ function DogfoodContent({role}) {
     </div>}
 
     {role === 'admin' && <>
+      {event && <section className={`${panel} mb-5`}><h3 className="text-lg font-black">Submission questions</h3>
+        <p className="my-2 text-sm text-gray-500">Answers are part of the public project. Questions lock when the first project is submitted.</p>
+        {questions.map((question,index)=><div className="my-3 flex flex-wrap items-center gap-3" key={question.code}>
+          <label className="flex-1">Question label<input aria-label={`Question ${index+1}`} className={`${input} block`} value={question.label} disabled={detail.questions_locked} onChange={e=>setQuestions(questions.map((q,i)=>i===index?{...q,label:e.target.value}:q))}/></label>
+          <label><input type="checkbox" checked={!!question.required} disabled={detail.questions_locked} onChange={e=>setQuestions(questions.map((q,i)=>i===index?{...q,required:e.target.checked}:q))}/> Required</label>
+          <button className={secondary} disabled={detail.questions_locked} onClick={()=>setQuestions(questions.filter((_,i)=>i!==index))}>Remove question {index+1}</button>
+        </div>)}
+        <div className="flex gap-2"><button className={secondary} disabled={detail.questions_locked || questions.length>=20} onClick={()=>setQuestions([...questions,{code:`question_${Date.now()}`,label:'',required:false}])}>Add question</button>
+          <button className={button} disabled={busy || detail.questions_locked} onClick={()=>run(()=>request(`/events/${eventId}/questions`,'PUT',{questions}))}>Save questions</button></div>
+      </section>}
       <div className="grid gap-5 lg:grid-cols-2">
         <section className={panel}><h3 className="text-lg font-black">Create an event</h3><p className="mb-4 text-sm text-gray-500">Set dates, tracks and prizes for another hackathon.</p>
           <form className="grid gap-3" onSubmit={e=>{e.preventDefault();const v=Object.fromEntries(new FormData(e.currentTarget));run(async()=>{const created=await request('/events','POST',{name:v.name,description:v.description,starts_at:new Date(v.starts_at).toISOString(),submissions_close:new Date(v.submissions_close).toISOString(),judging_close:v.judging_close?new Date(v.judging_close).toISOString():null,voting_close:v.voting_close?new Date(v.voting_close).toISOString():null,tracks:v.tracks.split(',').map(x=>x.trim()).filter(Boolean),prizes:v.prizes.split(',').map(x=>x.trim()).filter(Boolean).map(title=>({title}))});await loadEvents();setEventId(created.id);});}}>
@@ -437,6 +450,7 @@ function DogfoodContent({role}) {
         <textarea className={input} name="description" defaultValue={ownProject?.description || ''} placeholder="Full project story: the problem, approach and what you built" rows="4"/>
         <div className="grid gap-3 sm:grid-cols-2"><input className={input} name="repo_url" defaultValue={ownProject?.repo_url || ''} placeholder="Repository URL" type="url"/><input className={input} name="live_url" defaultValue={ownProject?.live_url || ''} placeholder="Live project URL" type="url"/><input className={input} name="demo_url" defaultValue={ownProject?.demo_url || ''} placeholder="Demo video URL" type="url"/><input className={input} name="thumbnail_url" defaultValue={ownProject?.thumbnail_url || ''} placeholder="Thumbnail URL" type="url"/></div>
         <input className={input} name="tech_tags" defaultValue={ownProject?.tech_tags?.join(', ') || ''} placeholder="Tech tags, comma separated" />
+        {detail?.questions?.map(question=><Field key={question.code} label={`${question.label}${question.required?' (required)':''}`}><textarea className={input} name={`answer.${question.code}`} defaultValue={ownProject?.custom_answers?.[question.code] || ''} maxLength={2000} rows={3}/></Field>)}
         <textarea className={input} name="image_urls" defaultValue={ownProject?.image_urls?.join('\n') || ''} placeholder="Gallery image URLs, one per line (up to 8)" rows="2" />
         <div className="flex gap-2"><button className={secondary} disabled={busy || !submissionsOpen}>Save {ownProject?'changes':'draft'}</button>{ownProject?.status==='draft'&&<button className={button} type="button" disabled={busy || !submissionsOpen} onClick={click=>{const form=click.currentTarget.closest('form');if(!form.reportValidity())return;const values=projectFormValues(form);run(async()=>{await request(`/projects/${ownProject.id}`,'PATCH',values);await request(`/projects/${ownProject.id}/submit`,'POST',{});});}}>Submit project</button>}</div><p className="text-xs text-gray-500">{ownProject?.status || 'No draft yet'} · deadline {dateLabel(event?.submissions_close)}{!submissionsOpen&&' · submissions closed'}</p></form>}</section></div>}
 
