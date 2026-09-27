@@ -1296,15 +1296,49 @@ class PortalHandler(BaseHTTPRequestHandler):
                 audit(conn, "judge_assign", user["id"], event_id, assignment_id)
                 self.send_json(201, {"id": assignment_id})
                 return
+            if len(parts) == 5 and parts[3:] == ["assignments", "batch"] and method == "POST":
+                self.must_role(conn, user, event_id, "organizer")
+                require(not event["published_at"], 409, "Published results cannot change")
+                require(not event["judging_close"] or now() < parse_time(event["judging_close"]),
+                        409, "Judging deadline has passed")
+                target = self.body_json().get("reviews_per_project", 3)
+                require(type(target) is int and 1 <= target <= 10, 422, "Choose one to ten reviews per project")
+                conn.execute("BEGIN IMMEDIATE")
+                judges = conn.execute("""SELECT u.* FROM users u JOIN event_roles er ON er.user_id=u.id
+                    WHERE er.event_id=? AND er.role='judge' ORDER BY u.id""", (event_id,)).fetchall()
+                workloads = {j["id"]: conn.execute("SELECT COUNT(*) FROM assignments WHERE event_id=? AND judge_user_id=?",
+                             (event_id, j["id"])).fetchone()[0] for j in judges}
+                projects = conn.execute("""SELECT * FROM projects WHERE event_id=? AND status='submitted'
+                    AND duplicate_of IS NULL ORDER BY id""", (event_id,)).fetchall()
+                created, shortfalls = [], []
+                batch = uid("batch")
+                for project in projects:
+                    existing = {r[0] for r in conn.execute("SELECT judge_user_id FROM assignments WHERE project_id=?", (project["id"],))}
+                    eligible = sorted((j for j in judges if j["id"] not in existing and
+                        judge_can_review(conn, j["id"], event_id, project["track_id"]) and
+                        not is_team_member(conn, j, project["team_id"])), key=lambda j: (workloads[j["id"]], j["id"]))
+                    for judge in eligible[:max(0, target-len(existing))]:
+                        assignment_id = uid("asn")
+                        conn.execute("INSERT INTO assignments VALUES(?,?,?,?,?,?)",
+                                     (assignment_id, event_id, project["id"], judge["id"], batch, iso()))
+                        workloads[judge["id"]] += 1
+                        existing.add(judge["id"])
+                        created.append(assignment_id)
+                    if len(existing) < target:
+                        shortfalls.append({"project_id": project["id"], "title": project["title"], "missing": target-len(existing)})
+                audit(conn, "judge_batch_assign", user["id"], event_id, batch, json.dumps({"created": len(created), "shortfalls": shortfalls}))
+                self.send_json(201, {"batch": batch, "created": len(created), "shortfalls": shortfalls})
+                return
             if len(parts) == 4 and parts[3] == "progress" and method == "GET":
                 self.must_role(conn, user, event_id, "organizer")
-                rows = conn.execute("""SELECT a.judge_user_id,u.name judge_name,
-                    COUNT(*) assigned,SUM(CASE WHEN r.status='submitted' THEN 1 ELSE 0 END) completed
-                    FROM assignments a JOIN users u ON u.id=a.judge_user_id
+                rows = conn.execute("""SELECT u.id judge_user_id,u.name judge_name,
+                    COUNT(a.id) assigned,SUM(CASE WHEN r.status='submitted' THEN 1 ELSE 0 END) completed
+                    FROM event_roles er JOIN users u ON u.id=er.user_id
+                    LEFT JOIN assignments a ON a.judge_user_id=u.id AND a.event_id=er.event_id
                     LEFT JOIN reviews r ON r.assignment_id=a.id
-                    WHERE a.event_id=? GROUP BY a.judge_user_id ORDER BY u.name""", (event_id,)).fetchall()
+                    WHERE er.event_id=? AND er.role='judge' GROUP BY u.id ORDER BY u.name""", (event_id,)).fetchall()
                 judges = [{**dict(r), "pending": r["assigned"] - r["completed"],
-                           "percent": round(100 * r["completed"] / r["assigned"], 1)} for r in rows]
+                           "percent": round(100 * r["completed"] / r["assigned"], 1) if r["assigned"] else 0} for r in rows]
                 assigned = sum(r["assigned"] for r in rows)
                 completed = sum(r["completed"] for r in rows)
                 self.send_json(200, {"assigned": assigned, "completed": completed, "pending": assigned-completed,

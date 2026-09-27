@@ -231,6 +231,7 @@ function DogfoodContent({role}) {
   const [teams, setTeams] = useState([]);
   const [judges, setJudges] = useState([]);
   const [assignments, setAssignments] = useState([]);
+  const [batchResult, setBatchResult] = useState(null);
   const [reviews, setReviews] = useState([]);
   const [rubric, setRubric] = useState(null);
   const [criteria, setCriteria] = useState([]);
@@ -407,6 +408,12 @@ function DogfoodContent({role}) {
           <form className="flex flex-wrap gap-2" onSubmit={e=>{e.preventDefault();const v=roleFormValues(e.currentTarget);run(()=>request(`/events/${eventId}/roles`,'POST',v));}}>
             <JudgeTracks tracks={detail?.tracks} />
             <input className={`${input} flex-1`} name="email" type="email" placeholder="Registered email" required/><select className={`${input} w-auto`} name="role"><option>judge</option><option>participant</option><option>organizer</option></select><button className={secondary} disabled={busy}>Add role</button></form>
+          <h4 className="mt-6 font-bold">Balance judge assignments</h4>
+          <form className="my-3 flex flex-wrap items-end gap-2" onSubmit={e=>{e.preventDefault();const count=Number(new FormData(e.currentTarget).get('reviews_per_project'));run(async()=>setBatchResult(await request(`/events/${eventId}/assignments/batch`,'POST',{reviews_per_project:count})));}}>
+            <Field label="Reviews per project"><input className={input} name="reviews_per_project" type="number" min="1" max="10" defaultValue="3" required /></Field>
+            <button className={button} disabled={busy || !event || !!event.published_at}>Assign batch</button>
+          </form>
+          {batchResult && <div role="status" className="rounded-xl bg-indigo-50 p-3 text-sm"><p>{batchResult.created} new assignments.</p>{batchResult.shortfalls.map(item=><p key={item.project_id}>{item.title}: needs {item.missing} more eligible judges.</p>)}</div>}
           <h4 className="mt-6 font-bold">Assign a submitted project</h4><form className="mt-3 grid gap-2" onSubmit={e=>{e.preventDefault();run(()=>request(`/events/${eventId}/assignments`,'POST',Object.fromEntries(new FormData(e.currentTarget))));}}>
             <select className={input} name="project_id" required>{projects.filter(p=>p.status==='submitted'&&!p.duplicate_of).map(p=><option value={p.id} key={p.id}>{p.title}</option>)}</select>
             <select className={input} name="judge_user_id" required>{judges.map(j=><option value={j.id} key={j.id}>{j.name} · {j.email}</option>)}</select><button className={secondary} disabled={busy || !judges.length || !projects.some(p=>p.status==='submitted'&&!p.duplicate_of) || !!event?.published_at}>Assign judge</button></form>
