@@ -1446,6 +1446,8 @@ class PortalHandler(BaseHTTPRequestHandler):
                 body = self.body_json()
                 name = clean(body.get("name", ""), 100)
                 require(name, 422, "Team name required")
+                conn.execute("BEGIN IMMEDIATE")
+                require_submission_open(event_row(conn, event_id))
                 already = conn.execute("""SELECT 1 FROM team_members tm JOIN teams t ON t.id=tm.team_id
                     WHERE t.event_id=? AND tm.user_id=?""", (event_id, user["id"])).fetchone()
                 require(not already, 409, "Already in a team for this event")
@@ -2026,6 +2028,7 @@ class PortalHandler(BaseHTTPRequestHandler):
             return
         if len(parts) == 4 and parts[:2] == ["api", "invites"] and parts[3] == "accept" and method == "POST":
             self.must_user(user)
+            conn.execute("BEGIN IMMEDIATE")
             invitation = conn.execute("""SELECT i.*,t.event_id FROM team_invites i
                 JOIN teams t ON t.id=i.team_id WHERE i.token_hash=?""", (token_hash(parts[2]),)).fetchone()
             require(invitation is not None and not invitation["revoked"] and

@@ -8,11 +8,14 @@ import io
 import json
 import math
 import os
+import sqlite3
 import tempfile
 import threading
 import time
 import unittest
 from datetime import timedelta
+from concurrent.futures import ThreadPoolExecutor
+from unittest.mock import patch
 from pathlib import Path
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.error import HTTPError
@@ -80,6 +83,67 @@ class PortalTests(unittest.TestCase):
             "email": email, "name": "Guest User", "password": "safe-password-123"})
         self.assertEqual(status, 201)
         return email, headers["Set-Cookie"].split(";", 1)[0]
+
+    def competing_requests(self, calls):
+        """Start together and widen the check/insert window without changing SQL."""
+        ready = threading.Barrier(len(calls))
+        original_connect = portal.sqlite3.connect
+
+        class SlowMembershipConnection(sqlite3.Connection):
+            def execute(self, sql, parameters=()):
+                if sql.startswith(("INSERT INTO teams", "INSERT INTO team_members")):
+                    time.sleep(0.1)
+                return super().execute(sql, parameters)
+
+        def connect(*args, **kwargs):
+            return original_connect(*args, **kwargs, factory=SlowMembershipConnection)
+
+        def run(call):
+            ready.wait(timeout=5)
+            return call()[0]
+
+        with patch.object(portal.sqlite3, "connect", connect), ThreadPoolExecutor(max_workers=len(calls)) as pool:
+            return list(pool.map(run, calls))
+
+    def test_concurrent_team_creation_and_invite_acceptance(self):
+        participant = "dogfood-participant-2026"
+        event = self.new_event()
+        path = f"/api/events/{event}/teams"
+        statuses = self.competing_requests([
+            lambda: self.request("POST", path, {"name": "Competing team"}, participant)
+            for _ in range(4)])
+        self.assertEqual(sorted(statuses), [201, 409, 409, 409])
+        teams = self.request("GET", path, token=participant)[1]["teams"]
+        self.assertEqual(sum(t["is_member"] for t in teams), 1)
+        team = next(t["id"] for t in teams if t["is_member"])
+        invite = self.request("POST", f"/api/teams/{team}/invites", {}, participant)[1]
+        accept = f"/api/invites/{invite['token']}/accept"
+        for _ in range(2):
+            cookie = self.register()[1]
+            self.assertEqual(self.request("POST", accept, {}, cookie=cookie)[0], 200)
+        cookies = [self.register()[1] for _ in range(3)]
+        statuses = self.competing_requests([
+            lambda cookie=cookie: self.request("POST", accept, {}, cookie=cookie)
+            for cookie in cookies])
+        self.assertEqual(sorted(statuses), [200, 404, 404])
+        with portal.db() as conn:
+            self.assertEqual(conn.execute("SELECT COUNT(*) FROM team_members WHERE team_id=?", (team,)).fetchone()[0], 4)
+            uses = conn.execute("SELECT uses,max_uses FROM team_invites WHERE token_hash=?",
+                                (portal.token_hash(invite["token"]),)).fetchone()
+            self.assertEqual(tuple(uses), (3, 3))
+
+        # A person accepting invitations to different teams still gets one membership.
+        other_event = self.new_event()
+        owner_cookie = self.register()[1]
+        first_team = self.request("POST", f"/api/events/{other_event}/teams", {"name": "First"}, participant)[1]["id"]
+        second_team = self.request("POST", f"/api/events/{other_event}/teams", {"name": "Second"}, cookie=owner_cookie)[1]["id"]
+        first = self.request("POST", f"/api/teams/{first_team}/invites", {}, participant)[1]["token"]
+        second = self.request("POST", f"/api/teams/{second_team}/invites", {}, cookie=owner_cookie)[1]["token"]
+        joining_cookie = self.register()[1]
+        statuses = self.competing_requests([
+            lambda token=token: self.request("POST", f"/api/invites/{token}/accept", {}, cookie=joining_cookie)
+            for token in (first, second)])
+        self.assertEqual(sorted(statuses), [200, 409])
 
     def test_track_scopes_block_assignment_and_recheck_existing_reviews(self):
         org, judge = "dogfood-organizer-2026", "dogfood-judge-a-2026"
