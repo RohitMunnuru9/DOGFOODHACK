@@ -18,6 +18,8 @@ Errors are JSON with an `error` message: 401 requires sign-in, 403 denies role/o
 6. Judges read `/api/judges/{judge_id}/scores`, then `PUT /api/assignments/{assignment_id}/review` with `{"scores":{"impact":4,"craft":3,"clarity":5},"comment":"Review notes","submit":true}`. Use the actual criterion codes and bounds returned by the assignment. Each review remains bound to its rubric version. A judge cannot read another judge's private scores.
 7. Organizers preview `/results`, close submissions using `PATCH /api/events/{event_id}`, and `POST /publish` after any voting window closes. Publication freezes normalized results and issues records. `/results` becomes public, while `/export.csv` and `/export.json` remain organizer-only.
 
+Project tracks may change before judges are assigned. After the first assignment, changing `track_id` returns 409 so existing reviews cannot count toward a different track. Project responses expose `track_locked`; other project fields remain editable until submissions close. Sending the unchanged track remains valid.
+
 ## Community access
 
 Set `/api/events/{event_id}/voting-policy` to `{"mode":"authenticated"}` or `{"mode":"invitation"}` before the first vote. In invitation mode create `/voter-invites` with an email and distribute the returned link yourself. The recipient accepts with `POST /api/voter-invites/{token}/accept` while signed into that email's account. This is controlled invitation distribution, not automated email verification. `/ballot` randomizes submitted, nonduplicate projects; `/votes` accepts a `project_id`. The service rejects second votes and team self-votes, logs abuse, and hides totals until publication (organizers may inspect them after voting closes).

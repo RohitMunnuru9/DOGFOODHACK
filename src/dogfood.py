@@ -571,6 +571,8 @@ def repo_url(value: object) -> str:
 
 def project_payload(conn: sqlite3.Connection, project: sqlite3.Row) -> dict:
     result = dict(project)
+    result["track_locked"] = conn.execute("SELECT 1 FROM assignments WHERE project_id=? LIMIT 1",
+                                          (project["id"],)).fetchone() is not None
     details = conn.execute("SELECT * FROM project_details WHERE project_id=?", (project["id"],)).fetchone()
     result.update({"tagline": "", "description": "", "thumbnail_url": "", "demo_url": "",
                    "live_url": "", "image_urls": [], "tech_tags": [], "custom_answers": {}})
@@ -2089,6 +2091,10 @@ class PortalHandler(BaseHTTPRequestHandler):
                     require(conn.execute("SELECT 1 FROM tracks WHERE id=? AND event_id=?",
                                          (updates["track_id"], project["event_id"])).fetchone() is not None,
                             422, "Invalid track")
+                    if updates["track_id"] != project["track_id"]:
+                        require(not conn.execute("SELECT 1 FROM assignments WHERE project_id=? LIMIT 1",
+                                                 (project["id"],)).fetchone(),
+                                409, "Track cannot change after judges are assigned")
                 if "title" in updates:
                     require(updates["title"], 422, "Title required")
                 updates["updated_at"] = iso()

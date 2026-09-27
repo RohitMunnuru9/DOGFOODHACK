@@ -239,6 +239,34 @@ class PortalTests(unittest.TestCase):
             for item in fixture["judges"]:
                 self.assertEqual(portal.judge_track_scope(conn, "evt_01", "judge_" + item["id"]), item["tracks"])
 
+    def test_assigned_project_cannot_move_reviews_to_another_track(self):
+        org, participant, judge = "dogfood-organizer-2026", "dogfood-participant-2026", "dogfood-judge-a-2026"
+        event = self.new_event(["Track A", "Track B"])
+        tracks = self.request("GET", f"/api/events/{event}")[1]["tracks"]
+        team = self.request("POST", f"/api/events/{event}/teams", {"name": "Track team"}, participant)[1]["id"]
+        project = self.request("POST", f"/api/events/{event}/projects", {
+            "team_id": team, "track_id": tracks[1]["id"], "title": "Track project", "submit": True}, participant)[1]["id"]
+        path = f"/api/projects/{project}"
+        self.assertEqual(self.request("PATCH", path, {"track_id": tracks[0]["id"]}, participant)[0], 200)
+        self.assertFalse(self.request("GET", path, token=participant)[1]["project"]["track_locked"])
+        self.assertEqual(self.request("POST", f"/api/events/{event}/roles", {
+            "email": "marek.nowak@example.org", "role": "judge", "track_ids": [tracks[0]["id"]]}, org)[0], 200)
+        assignment = self.request("POST", f"/api/events/{event}/assignments", {
+            "project_id": project, "judge_user_id": "judge_jdg_08"}, org)[1]["id"]
+        self.assertEqual(self.request("PATCH", path, {"track_id": tracks[1]["id"]}, participant)[0], 409)
+        self.assertEqual(self.request("PUT", f"/api/assignments/{assignment}/review", {
+            "scores": {"functionality": 5, "quality": 5, "innovation": 5}, "submit": True}, judge)[0], 200)
+        self.assertEqual(self.request("PATCH", path, {"track_id": tracks[1]["id"]}, participant)[0], 409)
+        self.assertEqual(self.request("PATCH", path, {"track_id": tracks[0]["id"], "title": "Edited title"}, participant)[0], 200)
+        saved = self.request("GET", path, token=participant)[1]["project"]
+        self.assertEqual(saved["title"], "Edited title")
+        self.assertEqual(saved["track_id"], tracks[0]["id"])
+        self.assertTrue(saved["track_locked"])
+        result = self.request("GET", f"/api/events/{event}/results", token=org)[1]["results"][0]
+        self.assertEqual((result["track_id"], result["review_count"], result["adjusted_score"]), (tracks[0]["id"], 1, 5.0))
+        own = self.request("GET", "/api/judges/judge_jdg_08/scores", token=judge)[1]["assignments"]
+        self.assertTrue(any(a["assignment_id"] == assignment for a in own))
+
     def test_batch_assignment_reports_shortfalls_and_unassigned_judges(self):
         org, participant = "dogfood-organizer-2026", "dogfood-participant-2026"
         event = self.new_event()

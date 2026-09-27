@@ -45,6 +45,14 @@ test('create, submit, judge, publish and export an event through the browser', a
   await page.getByLabel('Reviews per project',{exact:true}).fill('1');
   await page.getByRole('button',{name:'Assign batch',exact:true}).click();
   await expect(page.getByText('1 new assignments.',{exact:true})).toBeVisible();
+  await signIn('Participant');
+  await page.getByLabel('Select event').selectOption(eventId);
+  await expect(page.getByLabel('Project track',{exact:true})).toBeDisabled();
+  await expect(page.getByText('The track is fixed because judges have been assigned.',{exact:false})).toBeVisible();
+  await page.getByPlaceholder('Short summary',{exact:true}).fill('Updated after assignment, before the deadline.');
+  const savedProject = page.waitForResponse(response => response.request().method() === 'PATCH' && response.url().includes('/dogfood-api/projects/'));
+  await page.getByRole('button',{name:'Save changes',exact:true}).click();
+  expect((await savedProject).status()).toBe(200);
   await signIn('Judge');
   await page.getByLabel('Select event').selectOption(eventId);
   const review = section('Assigned reviews');

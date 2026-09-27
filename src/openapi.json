@@ -1752,6 +1752,7 @@
       },
       "patch": {
         "summary": "Edit own team project before deadline",
+        "description": "Project responses include track_locked. Once judges are assigned, changing track_id returns 409; unchanged tracks and other project edits remain allowed until the submission deadline.",
         "responses": {
           "200": {
             "description": "Updated",
