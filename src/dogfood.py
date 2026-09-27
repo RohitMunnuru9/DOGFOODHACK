@@ -739,6 +739,29 @@ def calculate_results(conn: sqlite3.Connection, event_id: str) -> list[dict]:
                                           -(x["adjusted_score"] or 0), x["project_id"]))
 
 
+def published_results_html(conn, event):
+    if not event["published_at"]:
+        return ""
+    rows = conn.execute("""SELECT s.*,p.title,p.duplicate_of,t.name track_name
+        FROM result_snapshots s JOIN projects p ON p.id=s.project_id
+        LEFT JOIN tracks t ON t.id=p.track_id WHERE s.event_id=?
+        ORDER BY t.name,s.adjusted_score DESC,p.id""", (event["id"],)).fetchall()
+    cells = []
+    for row in rows:
+        score = lambda value: "—" if value is None else f"{value:.3f}"
+        cells.append("<tr><td><a href='/projects/" + html.escape(row["project_id"], quote=True) + "'>" +
+                     html.escape(row["title"]) + "</a>" + (" · Duplicate excluded" if row["duplicate_of"] else "") +
+                     "</td><td>" + html.escape(row["track_name"] or "General") + "</td><td>" +
+                     score(row["raw_score"]) + "</td><td>" + score(row["adjusted_score"]) +
+                     "</td><td>" + str(row["review_count"]) + "</td></tr>")
+    return ("<section id='results' class='panel'><h2>Published judging results</h2>"
+            "<p>Frozen at " + html.escape(event["published_at"]) +
+            ". Ordered by adjusted score within each track. Unreviewed projects have no score.</p>"
+            "<div style='overflow-x:auto'><table style='width:100%;text-align:left;border-spacing:12px'>"
+            "<thead><tr><th>Project</th><th>Track</th><th>Raw score</th><th>Adjusted score</th>"
+            "<th>Reviews</th></tr></thead><tbody>" + "".join(cells) + "</tbody></table></div></section>")
+
+
 def restore_archive(conn, event_id, archive, actor):
     """Restore a complete portable archive into an empty event, atomically.
 
@@ -1106,16 +1129,23 @@ class PortalHandler(BaseHTTPRequestHandler):
             tracks = conn.execute("SELECT * FROM tracks WHERE event_id=? ORDER BY name", (event_id,)).fetchall()
             cards = "".join("<article class='project-card'><span class='eyebrow'>" + html.escape(p["track_name"] or "General") +
                             "</span><h2>" + html.escape(p["title"]) + "</h2><p>" + html.escape(p["summary"]) +
-                            "</p><a href='" + html.escape(p["repo_url"] or "#", quote=True) +
-                            "' rel='noopener noreferrer'>View repository ↗</a> · <a href='/projects/" +
+                            "</p>" + ("<a href='" + html.escape(p["repo_url"], quote=True) +
+                            "' rel='noopener noreferrer'>View repository ↗</a>" if p["repo_url"] else "") + "<a href='/projects/" +
                             html.escape(p["id"], quote=True) + "'>Read full submission</a>" +
                             ("<span class='flag'>Duplicate under review</span>" if p["duplicate_of"] else "") +
                             "</article>" for p in projects)
             options = "".join("<option value='" + html.escape(t["id"], quote=True) + "'" +
                               (" selected" if t["id"] == track else "") + ">" + html.escape(t["name"]) +
                               "</option>" for t in tracks)
+            event_options = "".join("<option value='" + html.escape(row["id"], quote=True) + "'" +
+                                    (" selected" if row["id"] == event_id else "") + ">" +
+                                    html.escape(row["name"]) + "</option>" for row in
+                                    conn.execute("SELECT id,name FROM events ORDER BY created_at DESC"))
+            event_picker = ("<label>Browse event <select aria-label='Browse event' "
+                            "onchange=\"location.href='/events/'+encodeURIComponent(this.value)+'/projects'\">" +
+                            event_options + "</select></label>")
             markup = """<!doctype html><html lang='en'><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
-            <title>""" + html.escape(event["name"]) + " · Projects</title><link rel='stylesheet' href='/assets/site.css'><body><header class='topbar'><a class='brand' href='/'>DOGFOOD<span> / PORTAL</span></a><nav><a href='/'>Dashboard</a><a href='/projects'>Gallery</a></nav></header><main class='gallery'><div class='gallery-head'><span class='eyebrow'>PUBLIC GALLERY</span><h1>" + html.escape(event["name"]) + "</h1><p>Explore the work, search by name, and filter by track.</p></div><form class='gallery-filter' method='get'><input name='q' placeholder='Search projects' value='" + html.escape(search, quote=True) + "'><select name='track'><option value=''>All tracks</option>" + options + "</select><button>Explore</button></form><div class='project-grid'>" + (cards or "<p>No projects match your filters.</p>") + "</div></main></body></html>"
+            <title>""" + html.escape(event["name"]) + " · Projects</title><link rel='stylesheet' href='/assets/site.css'><body><header class='topbar'><a class='brand' href='/'>DOGFOOD<span> / PORTAL</span></a><nav><a href='/'>Dashboard</a><a href='/projects'>Gallery</a></nav></header><main class='gallery'><div class='gallery-head'><span class='eyebrow'>PUBLIC GALLERY</span><h1>" + html.escape(event["name"]) + "</h1><p>Explore the work, search by name, and filter by track.</p>" + event_picker + "</div>" + published_results_html(conn, event) + "<form class='gallery-filter' method='get'><input name='q' placeholder='Search projects' value='" + html.escape(search, quote=True) + "'><select name='track'><option value=''>All tracks</option>" + options + "</select><button>Explore</button></form><div class='project-grid'>" + (cards or "<p>No projects match your filters.</p>") + "</div></main></body></html>"
             self.send_bytes(200, markup.encode("utf-8"), "text/html; charset=utf-8")
             return
         if re.fullmatch(r"/projects/[^/]+", path):

@@ -393,6 +393,7 @@ function DogfoodContent({role}) {
         {['open','judging','voting','published'].map((phase,index)=><span key={phase} className={`dogfood-phase ${event?.status === phase ? 'is-current' : ''}`}><span>{String(index+1).padStart(2,'0')}</span>{phase === 'open' ? 'Build' : phase === 'judging' ? 'Review' : phase === 'voting' ? 'Vote' : 'Results'}</span>)}
       </div>
     </div>
+    {event?.published_at && <a className={`${secondary} inline-block`} href={`/events/${eventId}/projects#results`}>View published judging results ↗</a>}
     {(error || message) && <div className={`fixed bottom-20 left-4 z-[120] flex max-w-sm items-start gap-3 rounded-2xl border p-4 text-sm font-semibold shadow-xl ${error ?
       'border-red-200 bg-red-50 text-red-700' : 'border-green-200 bg-green-50 text-green-700'}`}
       role={error ? 'alert' : 'status'}><span>{error || message}</span><button type="button" className="ml-auto text-lg leading-none" aria-label="Dismiss notification" onClick={()=>notify('')}>×</button></div>}

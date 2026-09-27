@@ -599,6 +599,10 @@ class PortalTests(unittest.TestCase):
         self.assertEqual(self.request("PATCH", f"/api/events/{event_id}", {
             "submissions_close": portal.iso(portal.now()-timedelta(minutes=1))}, organizer)[0], 200)
         self.assertEqual(self.request("POST", f"/api/events/{event_id}/publish", {}, organizer)[0], 200)
+        gallery = self.request("GET", f"/events/{event_id}/projects")[1]
+        self.assertIn("Published judging results", gallery)
+        self.assertIn("Adjusted score", gallery)
+        self.assertIn("4.000", gallery)
         public = self.request("GET", f"/api/events/{event_id}/results")[1]
         self.assertTrue(public["published"])
         self.assertAlmostEqual(public["results"][0]["adjusted_score"], preview[0]["adjusted_score"])
