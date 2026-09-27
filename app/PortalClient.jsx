@@ -1,10 +1,11 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import {ClaySkeleton} from '../src/ClayUI';
 
 const Portal = dynamic(() => import('../src/PortalApp.jsx'), {
   ssr: false,
-  loading: () => <main className="portal-boot" role="status"><span>D/F</span><p>Preparing your workspace</p></main>,
+  loading: () => <main className="clay-boot"><ClaySkeleton label="Preparing your workspace"/></main>,
 });
 
 export default function PortalClient() {

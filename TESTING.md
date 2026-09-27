@@ -61,3 +61,11 @@ The root acceptance receipt was generated against Compose on port 18000 because 
 | Public repository metadata | Public, main branch, MIT license |
 
 Each fix was committed and pushed separately, with its affected checks repeated after the push. Browser issues found during the combined run were fixed and the combined run repeated successfully. These are observed results from this environment; optional pairwise judging, automatic email delivery and independent offline certificate verification remain outside the implemented scope.
+
+## White clay redesign verification
+
+The subsequent UI makeover passed 18 browser regressions against the optimized Next standalone server, 21 Python API tests, 3 Node storage/OpenAPI checks, the fixture normalization comparison, and all 7 unmodified host acceptance probes. `npm run build` succeeded. Browser coverage includes keyboard dropdowns, multi-select tracks, calendar date/time submission, invalid-date feedback, number steppers, cursor response, loading skeletons, reduced motion, rapid navigation, draft preservation, public gallery filtering, and all existing account/submission/judging/publication workflows.
+
+Every organizer section was checked at a 390px viewport for horizontal overflow; desktop and mobile screenshots were also inspected. The actual interface and its control behavior are described in [docs/clay-ui.md](docs/clay-ui.md).
+
+These redesign checks used a separate temporary database with the Python API on port 8000 and the production Next server on port 14000. Docker Desktop was unavailable during this pass, so the updated container image was not rebuilt or reverified; the earlier Docker results above describe the preceding version.

@@ -9,6 +9,7 @@ const nextConfig = {
     return [
       {source: '/health', destination: `${apiOrigin}/health`},
       {source: '/assets/site.css', destination: `${apiOrigin}/assets/site.css`},
+      {source: '/assets/clay-public.js', destination: `${apiOrigin}/assets/clay-public.js`},
       {source: '/events/:path*', destination: `${apiOrigin}/events/:path*`},
       {source: '/projects/:path*', destination: `${apiOrigin}/projects/:path*`},
       {source: '/embed/:path*', destination: `${apiOrigin}/embed/:path*`},

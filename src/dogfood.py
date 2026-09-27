@@ -986,6 +986,8 @@ class PortalHandler(BaseHTTPRequestHandler):
 
     def send_bytes(self, status: int, body: bytes, content_type: str,
                    headers: dict[str, str] | None = None) -> None:
+        if content_type.startswith("text/html"):
+            body = body.replace(b"<body>", b"<link rel='stylesheet' href='/assets/site.css'><script defer src='/assets/clay-public.js'></script><body>", 1)
         self.send_response(status)
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(body)))
@@ -1120,6 +1122,9 @@ class PortalHandler(BaseHTTPRequestHandler):
             return
         if path == "/assets/site.css":
             self.send_bytes(200, (ROOT / "src" / "site.css").read_bytes(), "text/css; charset=utf-8")
+            return
+        if path == "/assets/clay-public.js":
+            self.send_bytes(200, (ROOT / "src" / "clay-public.js").read_bytes(), "text/javascript; charset=utf-8")
             return
         if re.fullmatch(r"/assets/[A-Za-z0-9_.-]+", path):
             asset = ROOT / "dist" / path.lstrip("/")

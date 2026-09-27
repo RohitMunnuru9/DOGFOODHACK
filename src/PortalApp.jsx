@@ -2,9 +2,12 @@
 
 import React, {useEffect, useState} from 'react';
 import DogfoodWorkspace from './DogfoodWorkspace';
+import {motion, MotionConfig} from 'framer-motion';
+import {ArrowUpRight, LogOut, Layers} from 'lucide-react';
+import {ClaySkeleton} from './ClayUI';
 
-const field = 'rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900';
-const button = 'rounded-xl bg-indigo-700 px-4 py-3 font-bold text-white disabled:opacity-50';
+const field = 'dogfood-input';
+const button = 'dogfood-button';
 
 async function api(path, body) {
   const response = await fetch(`/dogfood-api/${path}`, {
@@ -49,44 +52,47 @@ export default function PortalApp() {
     finally { setBusy(false); }
   };
 
-  return <div className="min-h-screen bg-[#f5f2e9] text-[#17342d]">
-    <header className="flex flex-wrap items-center justify-between gap-4 border-b border-[#d8dfd1] px-6 py-5">
-      <a href="/" className="text-2xl font-black tracking-tight">DOGFOOD / 2026</a>
-      <nav className="flex flex-wrap items-center gap-4" aria-label="Main navigation">
-        <a href="/projects" className="font-bold">Public gallery</a>
+  return <MotionConfig reducedMotion="user"><div className="clay-app" onInvalidCapture={event=>{event.preventDefault();event.target.setAttribute('aria-invalid','true');event.target.focus();setError(event.target.validationMessage);}} onInput={event=>{if(event.target.validity?.valid)event.target.removeAttribute('aria-invalid');}}>
+    <a className="clay-skip" href="#workspace-main">Skip to content</a>
+    <header className="clay-topbar">
+      <a href="/" className="clay-brand"><span className="clay-brand-mark"><Layers size={21}/></span>DOGFOOD<span className="clay-year">2026</span></a>
+      {identity?.user && <nav aria-label="Workspace" className="clay-role-tabs">
+          {Object.entries({contestant:'Participate',jury:'Judge',admin:'Organize'}).map(([value,label]) =>
+            <button key={value} aria-pressed={role === value} onClick={() => setRole(value)}>{role===value&&<motion.span layoutId="role-highlight" className="clay-role-highlight" transition={{type:'spring',stiffness:420,damping:36}}/>}<span>{label}</span></button>)}
+        </nav>}
+      <nav className="clay-account-nav" aria-label="Main navigation">
+        <a href="/projects" className="clay-gallery-link">Public gallery <ArrowUpRight size={15}/></a>
         {identity?.user && <><span data-testid="account-email">{identity.user.email}</span>
-          <button className={button} onClick={logout} disabled={busy}>Sign out</button></>}
+          <button className="clay-signout" onClick={logout} disabled={busy}><LogOut size={16}/><span>Sign out</span></button></>}
       </nav>
     </header>
     {error && <p role="alert" className="mx-auto my-4 max-w-3xl rounded-xl bg-red-50 p-4 text-red-800">{error}</p>}
-    {!identity ? <p role="status" className="p-8">Connecting to your portal…</p> : !identity.user ?
-      <main className="mx-auto max-w-lg px-6 py-12">
-        <p className="text-sm font-bold uppercase tracking-widest">Build. Submit. Judge.</p>
-        <h1 className="my-4 text-4xl font-black">{register ? 'Create your account' : 'Welcome back'}</h1>
-        <p className="mb-6">One account for your teams, events, and judging invitations.</p>
+    {!identity ? <main className="clay-boot"><ClaySkeleton label="Connecting to your portal"/></main> : !identity.user ?
+      <main className="clay-auth-layout" id="workspace-main">
+        <div className="clay-auth-story"><span className="clay-eyebrow">A LITTLE STRUCTURE. A LOT OF POSSIBILITY.</span><h2>Good ideas.<br/>Great company.</h2><p>A calmer space to build together, share your work, and discover what comes next.</p><div className="clay-auth-stack" aria-hidden="true"><div><span className="clay-mini-icon">01</span><strong>Make something<br/>that matters.</strong><small>Your next chapter starts here.</small></div><div><span className="clay-status-dot"/> Built together. Judged thoughtfully.</div></div><span className="clay-auth-foot">THE DOGFOOD HACKATHON · 2026</span></div>
+        <motion.div className="clay-auth-card" initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} transition={{duration:.35}}>
+        <p className="clay-eyebrow">YOUR WORKSPACE IS WAITING</p>
+        <h1>{register ? 'Create your account' : 'Welcome back'}</h1>
+        <p className="mb-6 clay-muted">One account for your teams, events, and judging invitations.</p>
         <form className="grid gap-4" onSubmit={event => {
           event.preventDefault(); authenticate(Object.fromEntries(new FormData(event.currentTarget)));
         }}>
           {register && <label className="grid gap-1">Name<input className={field} name="name" required minLength={2} autoComplete="name" /></label>}
           <label className="grid gap-1">Email<input className={field} name="email" type="email" required autoComplete="email" /></label>
           <label className="grid gap-1">Password<input className={field} name="password" type="password" required minLength={register ? 10 : undefined} autoComplete={register ? 'new-password' : 'current-password'} /></label>
-          <button className={button} disabled={busy}>{register ? 'Create account' : 'Sign in'}</button>
+          <button className={button} disabled={busy} aria-busy={busy}>{busy&&<span className="clay-spinner"/>}{register ? 'Create account' : 'Sign in'}<ArrowUpRight size={16}/></button>
         </form>
         <button className="mt-4 font-bold underline" onClick={() => {setRegister(!register); setError('');}}>
           {register ? 'Already registered? Sign in' : 'New here? Create an account'}
         </button>
-        {identity.demo_mode && <section className="mt-8 rounded-2xl border border-[#d8dfd1] p-5">
+        {identity.demo_mode && <section className="clay-demo-accounts">
           <h2 className="font-bold">Try a demo account</h2>
           <p className="my-2 text-sm">These accounts share the local sample events. Choose one explicitly to explore.</p>
           <div className="flex flex-wrap gap-2">{[['Organizer','organizer@demo.local','admin'],['Judge','marek.nowak@example.org','jury'],['Participant','participant@demo.local','contestant']].map(([label,email,workspace]) =>
-            <button key={email} className={button} disabled={busy} onClick={() => authenticate({email,password:'dogfood-demo-2026'},'login',workspace)}>{label}</button>)}</div>
+            <button key={email} className={`dogfood-secondary clay-demo-${workspace}`} disabled={busy} onClick={() => authenticate({email,password:'dogfood-demo-2026'},'login',workspace)}>{label}</button>)}</div>
         </section>}
-      </main> : <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
-        <nav aria-label="Workspace" className="mb-6 flex flex-wrap gap-3">
-          {Object.entries({contestant:'Participate',jury:'Judge',admin:'Organize'}).map(([value,label]) =>
-            <button key={value} aria-pressed={role === value} className={`${button} ${role === value ? '' : 'bg-gray-600'}`} onClick={() => setRole(value)}>{label}</button>)}
-        </nav>
+        </motion.div></main> : <main className="clay-workspace-root">
         <DogfoodWorkspace key={`${identity.user.id}:${role}`} role={role} />
       </main>}
-  </div>;
+  </div></MotionConfig>;
 }

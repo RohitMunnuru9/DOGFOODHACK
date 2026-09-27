@@ -1,3 +1,4 @@
+import {choose, navigate} from './helpers';
 import {test, expect} from '@playwright/test';
 
 test('organizer-configured invitations gate the browser ballot', async ({page}) => {
@@ -13,8 +14,9 @@ test('organizer-configured invitations gate the browser ballot', async ({page}) 
   await page.request.patch(`/dogfood-api/events/${event.id}`,{headers,data:{status:'voting',submissions_close:new Date(Date.now()-3600000).toISOString(),voting_close:new Date(Date.now()+3600000).toISOString()}});
   await page.goto('/');
   await page.getByRole('button',{name:'Organizer',exact:true}).click();
-  await page.getByLabel('Select event').selectOption(event.id);
-  await page.getByLabel('Voting access').selectOption('invitation');
+  await choose(page, 'Select event', event.id);
+  await navigate(page, 'Community');
+  await choose(page, 'Voting access', 'invitation');
   await page.getByRole('button',{name:'Save voting access',exact:true}).click();
   await expect.poll(async () => (await (await page.request.get(`/dogfood-api/events/${event.id}`)).json()).voting_policy).toBe('invitation');
   const email = `voter-${Date.now()}@example.org`;
@@ -33,7 +35,8 @@ test('organizer-configured invitations gate the browser ballot', async ({page}) 
   await page.getByRole('button',{name:'Accept invitation'}).click();
   await expect(page.locator('#message')).toContainText('Invitation accepted');
   await page.goto('/');
-  await page.getByLabel('Select event').selectOption(event.id);
+  await choose(page, 'Select event', event.id);
+  await navigate(page, 'Community');
   await page.getByRole('button',{name:'Vote',exact:true}).click();
   await expect(page.getByText('Your vote is recorded. Results stay hidden until publication.',{exact:true})).toBeVisible();
   expect((await page.request.get(`/dogfood-api/events/${event.id}/community-results`)).status()).toBe(403);

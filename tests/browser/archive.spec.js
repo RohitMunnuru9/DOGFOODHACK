@@ -1,3 +1,4 @@
+import {choose, navigate} from './helpers';
 import {test, expect} from '@playwright/test';
 
 test('an archive larger than one megabyte restores through the portal', async ({page}) => {
@@ -23,7 +24,8 @@ test('an archive larger than one megabyte restores through the portal', async ({
   const destination = await createEvent('Large archive destination');
   await page.goto('/');
   await page.getByRole('button',{name:'Organizer',exact:true}).click();
-  await page.getByLabel('Select event').selectOption(destination);
+  await choose(page, 'Select event', destination);
+  await navigate(page, 'Settings');
   await page.getByLabel('Import JSON file').setInputFiles({name:'large-event.json',mimeType:'application/json',buffer});
   await page.getByRole('button',{name:'Import event data',exact:true}).click();
   await expect(page.getByRole('status').filter({hasText:'150 projects'})).toBeVisible();
@@ -41,7 +43,8 @@ test('full fixture archive can be restored through the organizer interface', asy
   }})).json();
   await page.goto('/');
   await page.getByRole('button',{name:'Organizer',exact:true}).click();
-  await page.getByLabel('Select event').selectOption(destination.id);
+  await choose(page, 'Select event', destination.id);
+  await navigate(page, 'Settings');
   await page.getByLabel('Import JSON file').setInputFiles({name:'event.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(archive))});
   await page.getByRole('button',{name:'Import event data',exact:true}).click();
   await expect(page.getByRole('status').filter({hasText:'126 reviews'})).toBeVisible();

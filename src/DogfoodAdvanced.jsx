@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
+import {ClayUpload} from './ClayUI';
 
 const panel = 'dogfood-panel rounded-3xl border border-indigo-100 bg-white p-6 shadow-sm';
 const input = 'dogfood-input w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm outline-none';
@@ -81,7 +82,7 @@ export default function DogfoodAdvanced({event, role, request, onImported}) {
             await onImported();
             return result;
           }, result => `Imported ${result.teams_created} teams, ${result.projects_created} projects, ${result.tracks_created} tracks and ${result.prizes_created} prizes. ${result.members_added} members restored${result.history ? `; ${result.history.reviews} reviews, ${result.history.votes} votes and ${result.history.comments} comments restored` : ''}${result.accounts_to_activate?.length ? `; invite these accounts to activate them: ${result.accounts_to_activate.join(', ')}` : ''}.`); }}>
-            <label className="block text-xs font-bold uppercase tracking-wide text-gray-500">Import JSON file<input className={`${input} mt-2`} type="file" accept=".json,application/json" onChange={event=>setFile(event.target.files?.[0] || null)} /></label>
+            <ClayUpload accept=".json,application/json" onChange={event=>setFile(event.target.files?.[0] || null)} />
             <button className={secondary} disabled={!file || busy || !!event.published_at}>Import event data</button>
             {event.published_at && <p className="text-xs text-gray-500">Published events are frozen; import into a new event.</p>}
           </form>

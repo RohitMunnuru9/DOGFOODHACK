@@ -1,5 +1,5 @@
-import '../src/style.css';
-import '../src/experience.css';
+import '../src/base.css';
+import '../src/clay.css';
 
 export const metadata = {
   title: 'DOGFOOD 2026 — Build what matters',

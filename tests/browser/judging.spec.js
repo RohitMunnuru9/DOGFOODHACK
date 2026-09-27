@@ -1,3 +1,4 @@
+import {choose, navigate} from './helpers';
 import {test, expect} from '@playwright/test';
 
 test('organizer can assign a batch and see unassigned judges', async ({page}) => {
@@ -17,7 +18,8 @@ test('organizer can assign a batch and see unassigned judges', async ({page}) =>
     await page.request.post(`/dogfood-api/events/${event.id}/roles`, {headers:org,data:{email,role:'judge'}});
   await page.goto('/');
   await page.getByRole('button', {name:'Organizer',exact:true}).click();
-  await page.getByLabel('Select event').selectOption(event.id);
+  await choose(page, 'Select event', event.id);
+  await navigate(page, 'Judging');
   await expect(page.getByRole('heading',{name:'Judging progress'})).toBeVisible();
   await page.getByRole('button', {name:'Assign batch',exact:true}).click();
   await expect(page.getByText('2 new assignments.', {exact:true})).toBeVisible();

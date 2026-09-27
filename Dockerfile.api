@@ -1,7 +1,7 @@
 FROM python:3.13-slim
 WORKDIR /app
 COPY fixtures.json ./fixtures.json
-COPY src/dogfood.py src/site.css src/openapi.json ./src/
+COPY src/dogfood.py src/site.css src/clay-public.js src/openapi.json ./src/
 ENV HOST=0.0.0.0 PORT=8000 DOGFOOD_DB=/data/dogfood.sqlite3 DOGFOOD_DEMO_MODE=1
 EXPOSE 8000
 CMD ["python", "src/dogfood.py"]

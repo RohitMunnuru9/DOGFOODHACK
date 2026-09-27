@@ -1,3 +1,4 @@
+import {choose, navigate} from './helpers';
 import {test, expect} from '@playwright/test';
 
 test('a demo account with multiple roles opens the workspace named by its button', async ({page}) => {

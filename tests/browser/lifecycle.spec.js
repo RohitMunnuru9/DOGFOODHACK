@@ -1,3 +1,4 @@
+import {choose, navigate} from './helpers';
 import {test, expect} from '@playwright/test';
 
 const localTime = offset => {
@@ -9,13 +10,14 @@ test('create, submit, judge, publish and export an event through the browser', a
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   const eventName = `Lifecycle ${Date.now()}`;
-  const section = name => page.locator('section').filter({has:page.getByRole('heading',{name,exact:true})});
+  const section = name => page.locator('section:visible').filter({has:page.getByRole('heading',{name,exact:true})});
   const signIn = async role => {
     await page.getByRole('button',{name:'Sign out'}).click();
     await page.getByRole('button',{name:role,exact:true}).click();
   };
   await page.goto('/');
   await page.getByRole('button',{name:'Organizer',exact:true}).click();
+  await navigate(page, 'Settings');
   const create = section('Create an event');
   await create.getByPlaceholder('Event name',{exact:true}).fill(eventName);
   await create.getByLabel('Starts',{exact:true}).fill(localTime(-3600000));
@@ -23,14 +25,16 @@ test('create, submit, judge, publish and export an event through the browser', a
   await create.getByPlaceholder('Tracks, comma separated').fill('Open innovation');
   await create.getByPlaceholder('Prizes, comma separated').fill('Best working product');
   await create.getByRole('button',{name:'Create event',exact:true}).click();
-  await expect(page.getByLabel('Select event').locator('option:checked')).toHaveText(eventName);
-  await expect(page.getByLabel('Select event')).toBeEnabled();
-  const eventId = await page.getByLabel('Select event').inputValue();
+  await expect(page.getByRole('combobox',{name:'Select event',exact:true})).toHaveText(eventName);
+  await expect(page.getByRole('combobox',{name:'Select event',exact:true})).toBeEnabled();
+  const eventId = await page.getByRole('combobox',{name:'Select event',exact:true}).getAttribute('data-value');
+  await navigate(page, 'Judging');
   await page.getByPlaceholder('Registered email').fill('marek.nowak@example.org');
   await page.getByRole('button',{name:'Add role',exact:true}).click();
+  await navigate(page, 'Judging');
   await expect(section('Judging progress').getByText('Marek Nowak',{exact:true})).toBeVisible();
   await signIn('Participant');
-  await page.getByLabel('Select event').selectOption(eventId);
+  await choose(page, 'Select event', eventId);
   await page.getByPlaceholder('Team name',{exact:true}).fill('Lifecycle builders');
   await page.getByRole('button',{name:'Create team',exact:true}).click();
   await page.getByPlaceholder('Project title',{exact:true}).fill('A complete lifecycle');
@@ -41,12 +45,13 @@ test('create, submit, judge, publish and export an event through the browser', a
   await expect(page.getByRole('button',{name:'Submit project',exact:true})).toHaveCount(0);
   expect((await page.request.get(`/dogfood-api/events/${eventId}/results`)).status()).toBe(403);
   await signIn('Organizer');
-  await page.getByLabel('Select event').selectOption(eventId);
+  await choose(page, 'Select event', eventId);
+  await navigate(page, 'Judging');
   await page.getByLabel('Reviews per project',{exact:true}).fill('1');
   await page.getByRole('button',{name:'Assign batch',exact:true}).click();
   await expect(page.getByText('1 new assignments.',{exact:true})).toBeVisible();
   await signIn('Participant');
-  await page.getByLabel('Select event').selectOption(eventId);
+  await choose(page, 'Select event', eventId);
   await expect(page.getByLabel('Project track',{exact:true})).toBeDisabled();
   await expect(page.getByText('The track is fixed because judges have been assigned.',{exact:false})).toBeVisible();
   await page.getByPlaceholder('Short summary',{exact:true}).fill('Updated after assignment, before the deadline.');
@@ -54,7 +59,7 @@ test('create, submit, judge, publish and export an event through the browser', a
   await page.getByRole('button',{name:'Save changes',exact:true}).click();
   expect((await savedProject).status()).toBe(200);
   await signIn('Judge');
-  await page.getByLabel('Select event').selectOption(eventId);
+  await choose(page, 'Select event', eventId);
   const review = section('Assigned reviews');
   await review.getByLabel('Functionality · weight 1',{exact:true}).fill('5');
   await review.getByLabel('Quality · weight 1',{exact:true}).fill('4');
@@ -63,10 +68,13 @@ test('create, submit, judge, publish and export an event through the browser', a
   await review.getByRole('button',{name:'Submit review',exact:true}).click();
   await expect(review.getByRole('button',{name:'Update review',exact:true})).toBeVisible();
   await signIn('Organizer');
-  await page.getByLabel('Select event').selectOption(eventId);
+  await choose(page, 'Select event', eventId);
+  await navigate(page, 'Judging');
   await expect(section('Judging progress').getByText('1/1',{exact:true})).toBeVisible();
+  await navigate(page, 'Settings');
   await section('Event controls').getByLabel('Submissions close',{exact:true}).fill(localTime(-60000));
   await section('Event controls').getByRole('button',{name:'Save settings',exact:true}).click();
+  await navigate(page, 'Results');
   await page.getByRole('button',{name:'Publish results',exact:true}).click();
   await expect(page.getByText('Published snapshot',{exact:true})).toBeVisible();
   const downloadPromise = page.waitForEvent('download');

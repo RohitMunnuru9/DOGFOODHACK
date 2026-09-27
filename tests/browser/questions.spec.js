@@ -1,3 +1,4 @@
+import {choose, navigate} from './helpers';
 import {test, expect} from '@playwright/test';
 
 test('organizer questions reach the participant form and gate submission', async ({page}) => {
@@ -7,7 +8,8 @@ test('organizer questions reach the participant form and gate submission', async
   })).json();
   await page.goto('/');
   await page.getByRole('button',{name:'Organizer',exact:true}).click();
-  await page.getByLabel('Select event').selectOption(event.id);
+  await choose(page, 'Select event', event.id);
+  await navigate(page, 'Settings');
   await page.getByRole('button',{name:'Add question',exact:true}).click();
   await page.getByLabel('Question 1',{exact:true}).fill('What problem do you solve?');
   await page.getByLabel('Required',{exact:true}).check();
@@ -15,7 +17,7 @@ test('organizer questions reach the participant form and gate submission', async
   await expect.poll(async () => (await (await page.request.get(`/dogfood-api/events/${event.id}`)).json()).questions.length).toBe(1);
   await page.getByRole('button',{name:'Sign out'}).click();
   await page.getByRole('button',{name:'Participant',exact:true}).click();
-  await page.getByLabel('Select event').selectOption(event.id);
+  await choose(page, 'Select event', event.id);
   await page.getByPlaceholder('Team name',{exact:true}).fill('Questions browser team');
   await page.getByRole('button',{name:'Create team',exact:true}).click();
   await page.getByPlaceholder('Project title',{exact:true}).fill('Question browser entry');
