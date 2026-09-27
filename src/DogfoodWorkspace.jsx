@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import DogfoodAdvanced from './DogfoodAdvanced';
 import ClayOverview from './ClayOverview';
 import dynamic from 'next/dynamic';
@@ -239,6 +239,8 @@ function DogfoodContent({role}) {
   const [inviteLink, setInviteLink] = useState('');
   const commentsRef = useRef(null);
   const workspaceRef = useRef(null);
+  const mainRef = useRef(null);
+  useLayoutEffect(()=>{mainRef.current?.scrollTo({top:0,left:0,behavior:'instant'});},[displayedView,eventId]);
   useClayMotion(workspaceRef);
   const loadGeneration = useRef(0);
 
@@ -351,7 +353,7 @@ function DogfoodContent({role}) {
       <nav className="clay-sidebar-nav" aria-label="Event navigation">{tabs.map(([id,label,Icon])=><button key={id} type="button" aria-current={view===id?'page':undefined} onClick={()=>setView(id)}>{view===id&&<motion.span layoutId="event-nav-highlight" className="clay-nav-highlight" transition={{type:'spring',stiffness:350,damping:32}}/>}<Icon size={19}/><span>{label}</span>{id==='submissions'&&projects.length>0&&<small>{projects.length}</small>}</button>)}</nav>
       <div className="clay-sidebar-footer"><span className="clay-avatar peach">{me.name?.slice(0,1)}</span><span><strong>{me.name}</strong><small>{role==='admin'?'Organizer':role==='jury'?'Judge':'Participant'}</small></span><span className="clay-status-dot"/></div>
     </aside>
-    <div className="clay-main" id="workspace-main" tabIndex={-1}>
+    <div className="clay-main" ref={mainRef} id="workspace-main" tabIndex={-1}>
       <header className="clay-page-header"><div><span className="clay-eyebrow">{event?.name || 'YOUR EVENT WORKSPACE'}</span><motion.h1 key={view} initial={{opacity:0,y:reduced?0:5}} animate={{opacity:1,y:0}} transition={{duration:reduced?0:.25}}>{names[view]}</motion.h1><p>{subtitles[view]}</p></div><div className="clay-header-actions"><a className={secondary} href={eventId?`/events/${eventId}/projects`:'/projects'}>View public gallery <ArrowUpRight size={16}/></a>{role==='admin'&&<button className={button} onClick={()=>setView(view==='settings'?'judging':'settings')}><Plus size={16}/>{view==='settings'?'Invite judges':'Manage event'}</button>}</div></header>
       {busy&&<div className="clay-busy-line" role="status" aria-label="Saving changes"><span/></div>}
       {(error || message) && <div className={`clay-toast ${error?'is-error':''}`} role={error?'alert':'status'}><span className="clay-status-dot"/><span>{error || message}</span><button type="button" aria-label="Dismiss notification" onClick={()=>notify('')}>×</button></div>}

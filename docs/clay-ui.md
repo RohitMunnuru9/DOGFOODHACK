@@ -10,6 +10,8 @@ Arcade is available in every role. Its clay lobby retains Stacker 3D, Crossy Roa
 
 Views fade between sections while keeping form elements mounted, so switching tabs preserves unfinished form entries. Event changes replace the old content with a skeleton until a complete, current event snapshot is ready. Stale responses cannot overwrite a newer selection. Saving uses an indeterminate progress strip while retaining the visible content.
 
+The authenticated workspace fills the dynamic viewport. Its header and sidebar stay in place while the main content scrolls independently; the sidebar can scroll within its own bounds on shorter screens. On phones, the event picker and horizontal navigation remain above the scrolling content. Switching sections or events resets the main content to the top. Sign-in and public pages retain normal page scrolling.
+
 ## Controls and motion
 
 - Custom comboboxes support arrows, Home/End, Enter/Space, Escape, typeahead, outside dismissal, and multi-select judge tracks. Hidden inputs preserve form submission values.

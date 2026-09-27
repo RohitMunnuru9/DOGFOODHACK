@@ -71,3 +71,5 @@ Every organizer section was checked at a 390px viewport for horizontal overflow;
 These redesign checks used a separate temporary database with the Python API on port 8000 and the production Next server on port 14000. Docker Desktop was unavailable during this pass, so the updated container image was not rebuilt or reverified; the earlier Docker results above describe the preceding version.
 
 Arcade restoration adds two browser regressions, bringing the suite to 20 tests. They launch and start all six games, verify canvas/3D rendering surfaces, exercise return controls and focus, open the leaderboard, read a previously saved score after reload, and check every role plus the phone layout. The existing browser-local score storage and its Node regression remain unchanged.
+
+The workspace scroll fix adds three viewport regressions (1440×800, 1024×600, and 390×844), bringing the suite to 23 tests. Real wheel input checks all eight sections: content scrolls while header/sidebar coordinates and document scroll stay unchanged, section changes start at the top, and the last navigation item remains reachable on short screens.

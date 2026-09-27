@@ -52,7 +52,7 @@ export default function PortalApp() {
     finally { setBusy(false); }
   };
 
-  return <MotionConfig reducedMotion="user"><div className="clay-app" onInvalidCapture={event=>{event.preventDefault();event.target.setAttribute('aria-invalid','true');event.target.focus();setError(event.target.validationMessage);}} onInput={event=>{if(event.target.validity?.valid)event.target.removeAttribute('aria-invalid');}}>
+  return <MotionConfig reducedMotion="user"><div className={`clay-app${identity?.user ? ' clay-app--workspace' : ''}`} onInvalidCapture={event=>{event.preventDefault();event.target.setAttribute('aria-invalid','true');event.target.focus();setError(event.target.validationMessage);}} onInput={event=>{if(event.target.validity?.valid)event.target.removeAttribute('aria-invalid');}}>
     <a className="clay-skip" href="#workspace-main">Skip to content</a>
     <header className="clay-topbar">
       <a href="/" className="clay-brand"><span className="clay-brand-mark"><Layers size={21}/></span>DOGFOOD<span className="clay-year">2026</span></a>

@@ -19,3 +19,13 @@
 .clay-eyebrow,.clay-deadline,.clay-metrics small,.clay-table th,.clay-table td,.clay-progress-summary p,.clay-judge-list small,.clay-overview-note,.clay-sidebar-heading small,.clay-sidebar-footer small,.clay-auth-foot,.clay-auth-card form label,.clay-demo-accounts p,.clay-auth-stack small{color:#707965}
 .clay-table td strong{font-size:13px}.clay-table th{font-size:11px}.clay-metrics small{font-size:12px}.clay-judge-list>div,.clay-attention-row{font-size:12px}.clay-progress-summary>div:last-child>strong{font-size:12px}.clay-progress-summary p{font-size:11px}.clay-judge-list small{font-size:11px}.clay-table .clay-badge{font-size:11px}.clay-page-header p{color:#747d6c}.clay-auth-card label{color:#6c785f}
 @media(max-width:640px){.clay-table td strong{font-size:13px}.clay-table th{font-size:11px}.clay-metrics small{font-size:10px}.clay-header-actions .dogfood-button,.clay-header-actions .dogfood-secondary{font-size:12px;min-height:42px}.clay-phase-steps>div{font-size:10px}.clay-deadline,.clay-deadline strong{font-size:10px}.clay-sidebar-nav>button{min-height:42px;font-size:12px}.clay-auth-card .dogfood-input{font-size:16px}.clay-select{min-height:42px}}
+
+/* The authenticated shell owns the viewport; only the work area scrolls. */
+.clay-app--workspace{height:100vh;height:100dvh;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.clay-app--workspace>.clay-topbar{flex:none}
+.clay-app--workspace>.clay-workspace-root{flex:1;min-height:0;overflow:hidden}
+.clay-app--workspace .clay-shell{height:100%;width:100%;min-height:0;align-items:stretch}
+.clay-app--workspace .clay-sidebar{position:static;min-height:0;max-height:100%;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+.clay-app--workspace .clay-sidebar>*{flex-shrink:0}
+.clay-app--workspace .clay-main{min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;scroll-padding:16px}
+@media(max-width:900px){.clay-app--workspace .clay-shell{grid-template-rows:auto minmax(0,1fr)}.clay-app--workspace .clay-main{scrollbar-gutter:auto}}
