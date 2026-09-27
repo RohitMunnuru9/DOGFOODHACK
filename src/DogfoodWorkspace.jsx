@@ -253,6 +253,7 @@ function DogfoodContent({role}) {
   const commentsRef = useRef(null);
   const workspaceRef = useRef(null);
   const progressRef = useRef(null);
+  const loadGeneration = useRef(0);
 
   const notify = (text, failed = false) => { setMessage(failed ? '' : text); setError(failed ? text : ''); };
   const run = async action => {
@@ -272,29 +273,35 @@ function DogfoodContent({role}) {
 
   const loadEvent = async () => {
     if (!eventId) return;
-    const event = await request(`/events/${eventId}`);
-      setDetail(event);
-      setProjects((await request(`/events/${eventId}/projects`)).projects);
-      try { setRubric(await request(`/events/${eventId}/rubric`)); }
-      catch (failure) { if (failure.message === 'No active rubric') setRubric(null); else throw failure; }
-      if (role === 'admin') {
-        const [nextJudges, nextAssignments, nextProgress, nextResults, nextReviews, nextAudit] = await Promise.all([
-          request(`/events/${eventId}/judges`), request(`/events/${eventId}/assignments`),
-          request(`/events/${eventId}/progress`), request(`/events/${eventId}/results`),
-          request(`/events/${eventId}/reviews`), request(`/events/${eventId}/audit`),
-        ]);
-        setJudges(nextJudges.judges);
-        setAssignments(nextAssignments.assignments);
-        setProgress(nextProgress);
-        setResults(nextResults);
-        setReviewAudit(nextReviews.reviews);
-        setAudit(nextAudit.events);
-      }
-      if (role === 'contestant') setTeams((await request(`/events/${eventId}/teams`)).teams);
-      if (role === 'jury') {
-        const identity = await request('/me');
-        setReviews((await request(`/judges/${identity.user.id}/scores`)).assignments.filter(a => a.event_id === eventId));
-      }
+    const generation = ++loadGeneration.current;
+    const [nextDetail, nextProjects, nextRubric] = await Promise.all([
+      request(`/events/${eventId}`), request(`/events/${eventId}/projects`),
+      request(`/events/${eventId}/rubric`).catch(failure => {
+        if (failure.message === 'No active rubric') return null;
+        throw failure;
+      }),
+    ]);
+    let adminData, nextTeams, nextReviews;
+    if (role === 'admin') adminData = await Promise.all([
+      request(`/events/${eventId}/judges`), request(`/events/${eventId}/assignments`),
+      request(`/events/${eventId}/progress`), request(`/events/${eventId}/results`),
+      request(`/events/${eventId}/reviews`), request(`/events/${eventId}/audit`),
+    ]);
+    if (role === 'contestant') nextTeams = await request(`/events/${eventId}/teams`);
+    if (role === 'jury') nextReviews = await request(`/judges/${me.id}/scores`);
+    // Publish a complete event view only if it still belongs to the current selection.
+    if (generation !== loadGeneration.current) return;
+    setDetail(nextDetail);
+    setProjects(nextProjects.projects);
+    setRubric(nextRubric);
+    if (adminData) {
+      const [nextJudges, nextAssignments, nextProgress, nextResults, nextAuditReviews, nextAudit] = adminData;
+      setJudges(nextJudges.judges); setAssignments(nextAssignments.assignments);
+      setProgress(nextProgress); setResults(nextResults);
+      setReviewAudit(nextAuditReviews.reviews); setAudit(nextAudit.events);
+    }
+    if (nextTeams) setTeams(nextTeams.teams);
+    if (nextReviews) setReviews(nextReviews.assignments.filter(a => a.event_id === eventId));
   };
 
   useEffect(() => {
@@ -311,7 +318,15 @@ function DogfoodContent({role}) {
     return () => { active = false; };
   }, [role]);
 
-  useEffect(() => { if (ready && me && eventId) loadEvent().catch(failure => notify(failure.message, true)); }, [ready, me?.id, eventId, role]);
+  useEffect(() => {
+    let active = true;
+    setDetail(null); setProjects([]); setTeams([]); setReviews([]); setRubric(null);
+    setJudges([]); setAssignments([]); setProgress(null); setResults(null);
+    setReviewAudit([]); setAudit([]); setBatchResult(null); setInviteLink('');
+    setGalleryTrack(''); setSelectedCommunityProject(''); notify('');
+    if (ready && me && eventId) loadEvent().catch(failure => { if (active) notify(failure.message, true); });
+    return () => { active = false; loadGeneration.current++; };
+  }, [ready, me?.id, eventId, role]);
   useEffect(() => {
     const scroller = workspaceRef.current?.closest('.custom-scrollbar');
     if (!scroller) return;
@@ -325,10 +340,11 @@ function DogfoodContent({role}) {
   }, [role, ready]);
   useEffect(() => {
     if (role !== 'admin' || !eventId) return undefined;
+    let active = true;
     const interval = setInterval(async () => {
-      try { setProgress(await request(`/events/${eventId}/progress`)); } catch (_) { /* keep last value */ }
+      try { const next = await request(`/events/${eventId}/progress`); if (active) setProgress(next); } catch (_) { /* keep last value */ }
     }, 15000);
-    return () => clearInterval(interval);
+    return () => { active = false; clearInterval(interval); };
   }, [role, eventId]);
   useEffect(() => { setCriteria(rubric?.criteria?.map(c => ({code:c.code,label:c.label,weight:c.weight,min_score:c.min_score,max_score:c.max_score})) || []); }, [rubric?.rubric?.id]);
   useEffect(() => { setQuestions(detail?.questions || []); }, [detail]);
@@ -370,7 +386,7 @@ function DogfoodContent({role}) {
       <PortalSculpture />
     </div>
     <div className="dogfood-utilitybar">
-      <div className="dogfood-hero__switcher"><span>CURRENT EVENT</span><select className={`${input} w-full`} value={eventId} onChange={e=>setEventId(e.target.value)} aria-label="Select event">
+      <div className="dogfood-hero__switcher"><span>CURRENT EVENT</span><select className={`${input} w-full`} value={eventId} disabled={busy} onChange={e=>setEventId(e.target.value)} aria-label="Select event">
         {events.map(item=><option key={item.id} value={item.id}>{item.name}</option>)}
       </select></div>
       <div className="dogfood-phase-rail" aria-label="Event stages">

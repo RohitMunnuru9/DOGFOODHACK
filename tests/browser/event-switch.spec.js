@@ -1,0 +1,28 @@
+import {test, expect} from '@playwright/test';
+
+test('a delayed old event response cannot replace the selected workspace', async ({page}) => {
+  let release;
+  const hold = new Promise(resolve => { release = resolve; });
+  let intercepted;
+  const started = new Promise(resolve => { intercepted = resolve; });
+  let finished;
+  const delivered = new Promise(resolve => { finished = resolve; });
+  await page.route('**/dogfood-api/events/evt_demo/projects', async route => {
+    const response = await route.fetch();
+    intercepted();
+    await hold;
+    await route.fulfill({response});
+    finished();
+  });
+  await page.goto('/');
+  await page.getByRole('button',{name:'Participant',exact:true}).click();
+  await started;
+  await page.getByLabel('Select event').selectOption('evt_01');
+  const gallery = page.locator('section').filter({has:page.getByRole('heading',{name:'Public project gallery'})});
+  await expect(gallery.getByText('41 projects',{exact:true})).toBeVisible();
+  release();
+  await delivered;
+  await expect(page.getByLabel('Select event')).toHaveValue('evt_01');
+  await expect(gallery.getByText('41 projects',{exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Create team',exact:true})).toBeDisabled();
+});
