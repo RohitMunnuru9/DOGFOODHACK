@@ -1,0 +1,6 @@
+# Verification only: build first, then run the checker inside the API container.
+# Docker Desktop may not publish host ports on an internal-only network.
+# This allows the portal to reach its API, with no outbound internet route.
+networks:
+  default:
+    internal: true

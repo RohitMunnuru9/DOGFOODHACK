@@ -1,0 +1,47 @@
+# Verification
+
+The published host checker is unchanged. Run it directly with `python run.py .dogfood.toml`. It prints failures but does not reliably signal them through its exit status. `python scripts/check_acceptance.py` preserves its output and additionally exits nonzero unless all seven checks pass. An alternate port is supported with `--base-url http://localhost:18000`; the actual origin remains visible in the report.
+
+## Packaged application
+
+```powershell
+$env:DOGFOOD_PORT='18000' # Optional; default is 8000.
+docker compose -p dogfood-audit up -d --build --wait
+python scripts/check_acceptance.py --base-url http://localhost:18000
+$env:DOGFOOD_TEST_URL='http://127.0.0.1:18000'
+npx playwright test
+```
+
+Both containers have readiness checks. Compose retains SQLite in a named volume across restarts. Use a separate Compose project for test data. The browser suite creates real accounts and events in its target database, so point it at a demo/test instance. Without `DOGFOOD_TEST_URL`, Playwright creates isolated local Python/Next servers and a temporary database on ports 18080/13000.
+
+## Runtime without internet
+
+Initial image builds require the base images and npm packages, or a previously populated local cache. Once built, the application has no hosted runtime dependency. The isolated test override removes outbound routing; on Docker Desktop this also makes published host ports unavailable. Run the checker **inside** the isolated network:
+
+```powershell
+docker compose -p dogfood-isolated -f docker-compose.yml -f docker-compose.isolated-test.yml build
+docker compose -p dogfood-isolated -f docker-compose.yml -f docker-compose.isolated-test.yml up -d --no-build --pull never --wait
+docker compose -p dogfood-isolated cp run.py api:/tmp/run.py
+```
+
+Copy a temporary `.dogfood.toml` whose `base_url` is `http://portal:3000` into the API container at `/tmp/dogfood.toml`, then:
+
+```powershell
+docker compose -p dogfood-isolated exec -T api python /tmp/run.py /tmp/dogfood.toml --fixtures /app/fixtures.json
+```
+
+[docs/offline-acceptance-report.txt](docs/offline-acceptance-report.txt) contains the resulting unmodified checker output: 7/7 PASS. During this verification the Docker network's `Internal` property was true and a socket connection from the API container to `1.1.1.1:443` was rejected. Requests still passed through the actual Next portal to its API. Default Compose publishes the browser port normally; disconnecting the host internet does not remove that local port.
+
+## Regression coverage
+
+```powershell
+python -B -m unittest discover -s tests -v
+node --test tests/local-store.test.mjs tests/openapi.test.mjs
+python -B scripts/normalization_report.py --check
+npx playwright test
+npm run build
+```
+
+The Python suite covers ownership, roles, deadlines, track scopes, assignment balance, required answers, rubric versions, normalization, publication, invitation-gated voting, abuse, archive restoration, webhooks, and signed records. Browser tests cover account continuity, event switching with delayed responses, assignment shortfalls, questions, archive upload, voting invitations, and a complete create–submit–judge–publish–export lifecycle. The lifecycle also captures desktop and phone screenshots, checks for page errors and horizontal page overflow, and compares public scores with the expected result.
+
+The root acceptance receipt was generated against Compose on port 18000 because a separate development server occupied port 8000 on the test host. The checked-in default configuration still uses port 8000. The published checker certifies its seven T1/T2 probes; broader tests provide additional evidence, not a guarantee that every possible input or deployment is correct.
