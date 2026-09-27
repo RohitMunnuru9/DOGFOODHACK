@@ -1,5 +1,7 @@
 # Voting and review abuse model
 
+Organizers can choose ordinary authenticated voting or email-bound invitation-only voting before the first vote. Invitation mode requires possession of a random, single-use, expiring link and an account matching its named email; another self-registered account cannot access the ballot or cast a vote. Organizers distribute links themselves through a trusted channel, so no hosted email service is necessary. This is controlled invitation delivery, not automatic mailbox verification. Policy changes lock after the first vote, and grants survive archive restoration. Duplicate ballots, self-votes, and account rate limits remain enforced. Colluding invitees and careless distribution remain residual risks; authenticated mode alone cannot establish one person per account.
+
 The protected assets are review confidentiality before publication, one community vote per person, the integrity of submitted projects and scores, and the private event archive. The Python API, not the browser role selector, makes authorization decisions. Event participants, judges, organizers, and visitors may all send direct HTTP requests; the browser UI is not a security boundary.
 
 | Abuse | Current control | Residual risk |

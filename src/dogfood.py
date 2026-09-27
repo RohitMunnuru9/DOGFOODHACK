@@ -218,6 +218,19 @@ CREATE TABLE IF NOT EXISTS votes (
  project_id TEXT NOT NULL REFERENCES projects(id), user_id TEXT NOT NULL REFERENCES users(id),
  created_at TEXT NOT NULL, UNIQUE(event_id,user_id)
 );
+CREATE TABLE IF NOT EXISTS voting_policies (
+ event_id TEXT PRIMARY KEY REFERENCES events(id) ON DELETE CASCADE,
+ mode TEXT NOT NULL CHECK(mode IN ('authenticated','invitation'))
+);
+CREATE TABLE IF NOT EXISTS voter_invites (
+ token_hash TEXT PRIMARY KEY, event_id TEXT NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+ email TEXT NOT NULL, expires_at TEXT NOT NULL, accepted_at TEXT
+);
+CREATE TABLE IF NOT EXISTS voter_access (
+ event_id TEXT NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+ user_id TEXT NOT NULL REFERENCES users(id), granted_at TEXT NOT NULL,
+ PRIMARY KEY(event_id,user_id)
+);
 CREATE TABLE IF NOT EXISTS comments (
  id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
  user_id TEXT NOT NULL REFERENCES users(id), body TEXT NOT NULL,
@@ -303,6 +316,19 @@ def judge_can_review(conn, judge_id, event_id, track_id):
         return False
     scope = judge_track_scope(conn, event_id, judge_id)
     return scope is None or track_id in scope
+
+
+def voting_policy(conn, event_id):
+    row = conn.execute("SELECT mode FROM voting_policies WHERE event_id=?", (event_id,)).fetchone()
+    return row[0] if row else "authenticated"
+
+
+def require_voter_access(conn, event_id, user):
+    if voting_policy(conn, event_id) == "invitation" and not conn.execute(
+            "SELECT 1 FROM voter_access WHERE event_id=? AND user_id=?", (event_id, user["id"])).fetchone():
+        audit(conn, "uninvited_vote_blocked", user["id"], event_id)
+        conn.commit()
+        raise ApiError(403, "This ballot requires an email-bound voter invitation from the organizer")
 
 
 def is_team_member(conn: sqlite3.Connection, user: sqlite3.Row | None, team_id: str) -> bool:
@@ -708,7 +734,7 @@ def restore_archive(conn, event_id, archive, actor):
     require(not conn.execute("SELECT 1 FROM teams WHERE event_id=?", (event_id,)).fetchone() and
             not conn.execute("SELECT 1 FROM assignments WHERE event_id=?", (event_id,)).fetchone(),
             409, "Restore a full archive into a new empty event")
-    tables = ["tracks", "prizes", "event_questions", "event_roles", "judge_track_scopes", "teams",
+    tables = ["tracks", "prizes", "event_questions", "event_roles", "judge_track_scopes", "voting_policies", "voter_access", "teams",
               "team_members", "projects", "project_details", "rubrics", "criteria", "assignments",
               "reviews", "criterion_scores", "votes", "comments", "result_snapshots", "audit_events"]
     for table in ["users", *tables]:
@@ -740,7 +766,7 @@ def restore_archive(conn, event_id, archive, actor):
         return mappings[table][str(value)]
 
     conn.execute("DELETE FROM criteria WHERE rubric_id IN (SELECT id FROM rubrics WHERE event_id=?)", (event_id,))
-    for table in ["rubrics", "tracks", "prizes", "event_questions", "judge_track_scopes"]:
+    for table in ["rubrics", "tracks", "prizes", "event_questions", "judge_track_scopes", "voting_policies", "voter_access"]:
         conn.execute("DELETE FROM " + table + " WHERE event_id=?", (event_id,))
     references = {"team_id":"teams", "track_id":"tracks", "project_id":"projects", "rubric_id":"rubrics",
                   "criterion_id":"criteria", "assignment_id":"assignments", "review_id":"reviews",
@@ -1030,12 +1056,12 @@ class PortalHandler(BaseHTTPRequestHandler):
             require(asset.is_file(), 404, "Asset not found")
             self.send_bytes(200, asset.read_bytes(), mimetypes.guess_type(asset.name)[0] or "application/octet-stream")
             return
-        if path.startswith("/join/") or path.startswith("/role-invite/"):
+        if path.startswith("/join/") or path.startswith("/role-invite/") or path.startswith("/vote-invite/"):
             parts = path.strip("/").split("/")
             require(len(parts) == 2 and re.fullmatch(r"[A-Za-z0-9_-]{20,100}", parts[1]) is not None,
                     404, "Invalid invitation link")
-            endpoint = "/api/invites/" if parts[0] == "join" else "/api/role-invites/"
-            label = "team" if parts[0] == "join" else "event role"
+            endpoint = {"join":"/api/invites/", "role-invite":"/api/role-invites/", "vote-invite":"/api/voter-invites/"}[parts[0]]
+            label = "team" if parts[0] == "join" else "community ballot" if parts[0] == "vote-invite" else "event role"
             page = """<!doctype html><html lang='en'><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Accept invitation · DOGFOOD</title><link rel='stylesheet' href='/assets/site.css'><body><header class='topbar'><a class='brand' href='/'>DOGFOOD<span> / PORTAL</span></a></header><main class='workspace'><div class='panel' style='max-width:560px;margin:60px auto'><p class='eyebrow'>YOU ARE INVITED</p><h2>Join this """ + label + """.</h2><p id='message'>Sign in or create an account, then accept the invitation.</p><form id='auth' class='form-stack'><label>Name (new accounts only)<input name='name'></label><label>Email<input name='email' type='email' required></label><label>Password<input name='password' type='password' required></label><div class='inline-actions'><button name='mode' value='login' class='button ghost'>Sign in</button><button name='mode' value='register' class='button ghost'>Create account</button></div></form><button id='accept' class='button primary' style='margin-top:20px'>Accept invitation →</button></div></main><script>const endpoint=""" + json.dumps(endpoint + parts[1] + "/accept") + """;const message=document.getElementById('message');async function request(path,method,body){const r=await fetch(path,{method,headers:{'Content-Type':'application/json'},body:JSON.stringify(body),credentials:'same-origin'});const data=await r.json();if(!r.ok)throw Error(data.error||'Request failed');return data}document.getElementById('auth').onsubmit=async e=>{e.preventDefault();const f=new FormData(e.target);try{await request('/api/'+e.submitter.value,'POST',{...Object.fromEntries(f),invite_token:location.pathname.split('/').pop()});message.textContent='Signed in. Accept the invitation below.'}catch(err){message.textContent=err.message}};document.getElementById('accept').onclick=async()=>{try{await request(endpoint,'POST',{});message.textContent='Invitation accepted. Open your workspace to continue.';document.getElementById('accept').disabled=true}catch(err){message.textContent=err.message}};</script></body></html>"""
             self.send_bytes(200, page.encode("utf-8"), "text/html; charset=utf-8")
             return
@@ -1217,6 +1243,8 @@ class PortalHandler(BaseHTTPRequestHandler):
                 tracks = [dict(r) for r in conn.execute("SELECT id,name FROM tracks WHERE event_id=? ORDER BY name", (event_id,))]
                 prizes = [dict(r) for r in conn.execute("SELECT id,title,description FROM prizes WHERE event_id=?", (event_id,))]
                 self.send_json(200, {"event": dict(event), "tracks": tracks, "prizes": prizes,
+                                     "voting_policy": voting_policy(conn, event_id),
+                                     "voting_policy_locked": bool(event["published_at"] or conn.execute("SELECT 1 FROM votes WHERE event_id=?", (event_id,)).fetchone()),
                                      "questions": [dict(r) for r in conn.execute("SELECT * FROM event_questions WHERE event_id=? ORDER BY position", (event_id,))],
                                      "questions_locked": bool(conn.execute("SELECT 1 FROM projects WHERE event_id=? AND status='submitted'", (event_id,)).fetchone()),
                                      "can_manage": can_manage(conn, user, event_id),
@@ -1256,6 +1284,29 @@ class PortalHandler(BaseHTTPRequestHandler):
                              [*updates.values(), event_id])
                 audit(conn, "event_update", user["id"], event_id, detail=",".join(updates))
                 self.send_json(200, {"ok": True})
+                return
+            if len(parts) == 4 and parts[3] == "voting-policy" and method == "PUT":
+                self.must_role(conn, user, event_id, "organizer")
+                conn.execute("BEGIN IMMEDIATE")
+                event = event_row(conn, event_id)
+                require(not event["published_at"] and not conn.execute("SELECT 1 FROM votes WHERE event_id=?", (event_id,)).fetchone(),
+                        409, "Voting access is locked after the first vote")
+                mode = self.body_json().get("mode")
+                require(mode in ("authenticated", "invitation"), 422, "Choose authenticated or invitation access")
+                conn.execute("INSERT OR REPLACE INTO voting_policies VALUES(?,?)", (event_id, mode))
+                audit(conn, "voting_policy_update", user["id"], event_id, detail=mode)
+                self.send_json(200, {"mode": mode})
+                return
+            if len(parts) == 4 and parts[3] == "voter-invites" and method == "POST":
+                self.must_role(conn, user, event_id, "organizer")
+                require(not event["published_at"] and (not event["voting_close"] or now() < parse_time(event["voting_close"])),
+                        409, "Voting is closed")
+                email = clean(self.body_json().get("email", ""), 200).lower()
+                require(re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email), 422, "Valid voter email required")
+                token = secrets.token_urlsafe(32)
+                conn.execute("INSERT INTO voter_invites VALUES(?,?,?,?,?)", (token_hash(token), event_id, email, iso(now()+timedelta(days=7)), None))
+                audit(conn, "voter_invite_create", user["id"], event_id, detail=email)
+                self.send_json(201, {"email": email, "invite_path": "/vote-invite/"+token})
                 return
             if len(parts) == 4 and parts[3] == "questions" and method == "PUT":
                 self.must_role(conn, user, event_id, "organizer")
@@ -1617,7 +1668,7 @@ class PortalHandler(BaseHTTPRequestHandler):
                 self.must_role(conn, user, event_id, "organizer")
                 direct = ("tracks", "prizes", "teams", "projects", "rubrics", "assignments",
                           "result_snapshots", "votes", "audit_events", "issued_records", "event_roles",
-                          "event_questions", "judge_track_scopes", "archive_provenance")
+                          "event_questions", "judge_track_scopes", "archive_provenance", "voting_policies", "voter_access")
                 archive = {"schema": "dogfood-event-v1", "exported_at": iso(), "event": dict(event)}
                 for table in direct:
                     archive[table] = [dict(row) for row in conn.execute(
@@ -1640,8 +1691,9 @@ class PortalHandler(BaseHTTPRequestHandler):
                     SELECT tm.user_id FROM team_members tm JOIN teams t ON t.id=tm.team_id WHERE t.event_id=? UNION
                     SELECT judge_user_id FROM assignments WHERE event_id=? UNION
                     SELECT user_id FROM votes WHERE event_id=? UNION
-                    SELECT c.user_id FROM comments c JOIN projects p ON p.id=c.project_id WHERE p.event_id=?) ORDER BY u.id""",
-                    (event_id, event_id, event_id, event_id, event_id)).fetchall()]
+                    SELECT c.user_id FROM comments c JOIN projects p ON p.id=c.project_id WHERE p.event_id=? UNION
+                    SELECT user_id FROM voter_access WHERE event_id=?) ORDER BY u.id""",
+                    (event_id, event_id, event_id, event_id, event_id, event_id)).fetchall()]
                 self.send_bytes(200, json.dumps(archive, ensure_ascii=False, default=str).encode("utf-8"),
                                 "application/json; charset=utf-8",
                                 {"Content-Disposition": "attachment; filename=dogfood-event.json"})
@@ -1842,6 +1894,21 @@ class PortalHandler(BaseHTTPRequestHandler):
 
     def api_resource(self, conn: sqlite3.Connection, user: sqlite3.Row | None,
                      method: str, parts: list[str], query: dict) -> None:
+        if len(parts) == 4 and parts[:2] == ["api", "voter-invites"] and parts[3] == "accept" and method == "POST":
+            self.must_user(user)
+            conn.execute("BEGIN IMMEDIATE")
+            invite = conn.execute("SELECT * FROM voter_invites WHERE token_hash=?", (token_hash(parts[2]),)).fetchone()
+            require(invite is not None and not invite["accepted_at"] and parse_time(invite["expires_at"]) > now(),
+                    404, "Voter invitation is invalid, expired, or already used")
+            require(user["email"].lower() == invite["email"], 403, "Sign in with the invited email address")
+            event = event_row(conn, invite["event_id"])
+            require(not event["published_at"] and (not event["voting_close"] or now() < parse_time(event["voting_close"])),
+                    409, "Voting is closed")
+            conn.execute("INSERT OR IGNORE INTO voter_access VALUES(?,?,?)", (event["id"], user["id"], iso()))
+            conn.execute("UPDATE voter_invites SET accepted_at=? WHERE token_hash=?", (iso(), invite["token_hash"]))
+            audit(conn, "voter_invite_accept", user["id"], event["id"])
+            self.send_json(200, {"event_id": event["id"], "eligible": True})
+            return
         if len(parts) == 4 and parts[:2] == ["api", "role-invites"] and parts[3] == "accept" and method == "POST":
             self.must_user(user)
             invitation = conn.execute("SELECT * FROM role_invites WHERE token_hash=?",
@@ -2064,6 +2131,7 @@ class PortalHandler(BaseHTTPRequestHandler):
         if len(parts) == 4 and parts[:2] == ["api", "events"] and parts[3] == "ballot" and method == "GET":
             event = event_row(conn, parts[2])
             self.must_user(user)
+            require_voter_access(conn, event["id"], user)
             require(event["status"] == "voting" and
                     (not event["voting_close"] or now() < parse_time(event["voting_close"])),
                     409, "Voting is closed")
@@ -2079,6 +2147,9 @@ class PortalHandler(BaseHTTPRequestHandler):
         if len(parts) == 4 and parts[:2] == ["api", "events"] and parts[3] == "votes" and method == "POST":
             event = event_row(conn, parts[2])
             self.must_user(user)
+            conn.execute("BEGIN IMMEDIATE")  # Serialize eligibility, policy, and duplicate checks.
+            event = event_row(conn, parts[2])
+            require_voter_access(conn, event["id"], user)
             require(event["status"] == "voting" and
                     (not event["voting_close"] or now() < parse_time(event["voting_close"])),
                     409, "Voting is closed")
@@ -2086,7 +2157,6 @@ class PortalHandler(BaseHTTPRequestHandler):
             project = conn.execute("SELECT * FROM projects WHERE id=? AND event_id=? AND status='submitted'",
                                    (project_id, event["id"])).fetchone()
             require(project is not None and project["duplicate_of"] is None, 422, "Invalid ballot choice")
-            conn.execute("BEGIN IMMEDIATE")  # A voter cannot race two ballots into the same event.
             if is_team_member(conn, user, project["team_id"]):
                 audit(conn, "vote_self_blocked", user["id"], event["id"], project_id)
                 conn.commit()

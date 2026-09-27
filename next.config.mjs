@@ -15,6 +15,7 @@ const nextConfig = {
       {source: '/verify/:path*', destination: `${apiOrigin}/verify/:path*`},
       {source: '/certificates/:path*', destination: `${apiOrigin}/certificates/:path*`},
       {source: '/role-invite/:path*', destination: `${apiOrigin}/role-invite/:path*`},
+      {source: '/vote-invite/:path*', destination: `${apiOrigin}/vote-invite/:path*`},
       {source: '/join/:path*', destination: `${apiOrigin}/join/:path*`},
       {source: '/media/:path*', destination: `${apiOrigin}/media/:path*`},
     ];

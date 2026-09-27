@@ -385,6 +385,17 @@ function DogfoodContent({role}) {
     </div>}
 
     {role === 'admin' && <>
+      {event && <section className={`${panel} mb-5`}><h3 className="text-lg font-black">Community voting access</h3>
+        <p className="my-2 text-sm text-gray-500">Use email-bound invitations to limit voting to your approved voters. Deliver each private link to its named recipient. No email service is required.</p>
+        <form key={`${eventId}:${detail.voting_policy}`} className="flex flex-wrap gap-2" onSubmit={e=>{e.preventDefault();const mode=new FormData(e.currentTarget).get('mode');run(()=>request(`/events/${eventId}/voting-policy`,'PUT',{mode}));}}>
+          <select className={input} name="mode" aria-label="Voting access" defaultValue={detail.voting_policy} disabled={detail.voting_policy_locked}><option value="authenticated">Any signed-in account</option><option value="invitation">Email-bound invitation only</option></select>
+          <button className={button} disabled={busy || detail.voting_policy_locked}>Save voting access</button>
+        </form>
+        <form className="mt-3 flex flex-wrap gap-2" onSubmit={e=>{e.preventDefault();const email=new FormData(e.currentTarget).get('email');run(async()=>{const invitation=await request(`/events/${eventId}/voter-invites`,'POST',{email});setInviteLink(`${window.location.origin}${invitation.invite_path}`);});}}>
+          <input className={input} name="email" type="email" placeholder="Voter email" required/><button className={secondary} disabled={busy || !!event.published_at}>Create voter invitation</button>
+        </form>
+        {inviteLink?.includes('/vote-invite/') && <p className="mt-2 break-all text-sm">{inviteLink}</p>}
+      </section>}
       {event && <section className={`${panel} mb-5`}><h3 className="text-lg font-black">Submission questions</h3>
         <p className="my-2 text-sm text-gray-500">Answers are part of the public project. Questions lock when the first project is submitted.</p>
         {questions.map((question,index)=><div className="my-3 flex flex-wrap items-center gap-3" key={question.code}>

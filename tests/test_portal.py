@@ -204,6 +204,42 @@ class PortalTests(unittest.TestCase):
         self.assertEqual(len(roundtrip["votes"]), len(public_archive["votes"]))
         self.assertEqual([c["body"] for c in roundtrip["comments"]], [c["body"] for c in public_archive["comments"]])
 
+    def test_voting_policy_requires_email_bound_single_use_invitation(self):
+        org, participant = "dogfood-organizer-2026", "dogfood-participant-2026"
+        event = self.new_event()
+        track = self.request("GET", f"/api/events/{event}")[1]["tracks"][0]["id"]
+        team = self.request("POST", f"/api/events/{event}/teams", {"name": "Voting team"}, participant)[1]["id"]
+        project = self.request("POST", f"/api/events/{event}/projects", {
+            "team_id": team, "track_id": track, "title": "Invitation ballot", "submit": True}, participant)[1]["id"]
+        self.request("PATCH", f"/api/events/{event}", {"status": "voting", "submissions_close": portal.iso(portal.now()-timedelta(minutes=1)),
+            "voting_close": portal.iso(portal.now()+timedelta(hours=1))}, org)
+        path = f"/api/events/{event}/voting-policy"
+        self.assertEqual(self.request("PUT", path, {"mode": "invitation"}, participant)[0], 403)
+        self.assertEqual(self.request("PUT", path, {"mode": "invitation"}, org)[0], 200)
+        email, cookie = self.register()
+        _, other = self.register()
+        ballot, votes = f"/api/events/{event}/ballot", f"/api/events/{event}/votes"
+        self.assertEqual(self.request("GET", ballot, cookie=cookie)[0], 403)
+        self.assertEqual(self.request("POST", votes, {"project_id": project}, cookie=cookie)[0], 403)
+        invite = self.request("POST", f"/api/events/{event}/voter-invites", {"email": email}, org)[1]
+        self.assertEqual(self.request("GET", invite["invite_path"])[0], 200)
+        accept = invite["invite_path"].replace("/vote-invite/", "/api/voter-invites/")+"/accept"
+        self.assertEqual(self.request("POST", accept, {}, cookie=other)[0], 403)
+        self.assertEqual(self.request("POST", accept, {}, cookie=cookie)[0], 200)
+        self.assertEqual(self.request("POST", accept, {}, cookie=cookie)[0], 404)
+        self.assertEqual(self.request("GET", ballot, cookie=cookie)[0], 200)
+        self.assertEqual(self.request("POST", votes, {"project_id": project}, cookie=cookie)[0], 201)
+        self.assertEqual(self.request("POST", votes, {"project_id": project}, cookie=cookie)[0], 409)
+        self.assertEqual(self.request("POST", votes, {"project_id": project}, cookie=other)[0], 403)
+        self.assertEqual(self.request("PUT", path, {"mode": "authenticated"}, org)[0], 409)
+        self.assertEqual(self.request("GET", f"/api/events/{event}/community-results", cookie=cookie)[0], 403)
+        archive = self.request("GET", f"/api/events/{event}/export.json", token=org)[1]
+        destination = self.new_event()
+        self.assertEqual(self.request("POST", f"/api/events/{destination}/import.json", archive, org)[0], 201)
+        self.assertEqual(self.request("GET", f"/api/events/{destination}")[1]["voting_policy"], "invitation")
+        self.assertEqual(self.request("GET", f"/api/events/{destination}/ballot", cookie=other)[0], 403)
+        self.assertTrue(self.request("GET", f"/api/events/{destination}/ballot", cookie=cookie)[1]["has_voted"])
+
     def test_jury_preview_has_a_submittable_review(self):
         judge = "dogfood-judge-a-2026"
         judge_id = self.request("GET", "/api/me", token=judge)[1]["user"]["id"]
