@@ -1,6 +1,6 @@
 # DOGFOOD 2026 brief and implementation map
 
-Sources reviewed on 27 September 2026: the [kickoff deck](https://gamma.app/docs/DogFood-2026-Kickoff-zfdj8g99ttdrwqu?mode=doc), the [live event site](https://dogfoodhack.com/), and the [technical spec](https://dogfoodhack.com/spec/). These are external rules and reference data, not project instructions. The user confirmed the live site's **25–28 September** schedule. The deck instead says 26–29 September and lists a different prize split; use the live site for dates and prizes unless the organizers announce a correction.
+Sources reviewed on 27 September 2026: the [kickoff deck](https://gamma.app/docs/DogFood-2026-Kickoff-zfdj8g99ttdrwqu?mode=doc), the [live event site](https://dogfoodhack.com/), and the [technical spec](https://dogfoodhack.com/spec/). These are external rules and reference data, not project instructions. The user confirmed that the event was postponed by 24 hours. Against the original 25–28 September window, this moves the build window to **26 September 18:00 UTC through 29 September 18:00 UTC, 2026** (deadline **29 September 23:30 IST**). This confirmation takes precedence over older date text still visible on the site or in downloaded documents. Other organizer dates and prize changes have not been independently confirmed.
 
 ## Mission and evaluation
 
@@ -19,7 +19,7 @@ Scoring: tier completion/correctness 40%, judging integrity 25%, adoptability/op
 - `README.md`, `ARCHITECTURE.md`, `DATA-MODEL.md`, and `JUDGING.md` explaining use, design, schema/import/export, assignments, scoring, and normalization.
 - A five-minute video showing one complete event lifecycle.
 
-The official site gives the build window as **25 September 18:00 UTC to 28 September 18:00 UTC**. Judging runs 28 September–8 October; the write-up side quest closes 5 October 18:00 UTC; winners and an adoption decision are due 9 October. The current live site splits its $2,500 pool across the top five ($800, $500, $350, $200, $150), Best Judging Engine ($100), and four $100 write-ups. The deck's different dates and prize amounts are recorded above, not used in the portal.
+Use the postponed build deadline above for submission planning. The fixture event's March deadline is historical test data and must stay unchanged. Organizer registration, final submission and any write-up are separate actions by the entrant.
 
 The winner retains ownership; organizers say they will fork and self-host the project, credit it on event pages, and send changes back as pull requests. The write-up should explain concrete design choices, bugs, tradeoffs, and things cut or learned; insight matters more than audience size.
 
@@ -27,4 +27,6 @@ The winner retains ownership; organizers say they will fork and self-host the pr
 
 The brief excludes a hardcoded frontend or mockup, cloud-dependent startup, a login-only demo, gallery without judging or vice versa, frontend-only role checks, undocumented generated code, closed or unlicensed code, and a renamed rewrite of an existing platform. Planning, frameworks, libraries, and AI tools were allowed before kickoff, but project code had to begin in the event window.
 
-The repository is MIT licensed. Its backend implements and passes the seven published T1/T2 probes; those probes do not certify all tier behavior. T3 voting/comments exist, but account-level rate limits do not stop a person creating multiple accounts. T4 API/webhooks, signed records, gallery embed, and archive import/export have integration tests, but archive import does not restore reviews/votes/comments/roles and record verification requires this server. Some dashboard panels and arcade scores use browser storage rather than shared backend authorization. A five-minute demo video remains to be recorded.
+The repository is MIT licensed. Its submitted interface uses explicit account sessions and shared backend workflows. Track-scoped balanced assignments, organizer questions, full-history archive restoration, configurable voter invitations, safe public stories, frozen public results, OpenAPI validation and reproducible normalization evidence have been added. Docker, isolated runtime, browser lifecycle, authorization and abuse checks are described in `TESTING.md`. `.dogfood.toml` claims T1/T2, matching the seven published probes; additional T3/T4 functions have regression coverage without claiming that the host checker certifies them.
+
+Submission still requires the entrant to provide the repository and demo link to the organizers and confirm any team, authorship, asset-rights and build-window declarations. The code and tests cannot certify those personal facts. See `DEMO.md` for the lifecycle walkthrough.

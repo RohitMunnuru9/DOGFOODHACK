@@ -6,7 +6,7 @@ The protected assets are review confidentiality before publication, one communit
 
 | Abuse | Current control | Residual risk |
 | --- | --- | --- |
-| Repeated votes from one account | Unique `(event_id,user_id)` vote constraint, transaction around vote creation, event phase and deadline checks | A person can register multiple local accounts; there is no verified identity or email ownership |
+| Repeated votes from one account | Unique `(event_id,user_id)` vote constraint, transaction around vote creation, event phase and deadline checks | Authenticated mode permits multiple accounts per person; invitation mode relies on trusted distribution, with no automated mailbox verification |
 | Self-voting or coordinated teams | Team membership blocks voting for one's own project; ballots are randomized | Friends and alternate accounts can coordinate; randomized order reduces order bias but cannot establish independence |
 | Ballot stuffing after close | Server checks phase and `voting_close` on every write; attempts are logged | An organizer can change the window before publication; organizer actions must remain reviewable |
 | Spam or duplicate comments | Per-account rate limit, duplicate body check, organizer hide action, audit entries | New accounts and text variations bypass simple controls; moderation is reactive |
