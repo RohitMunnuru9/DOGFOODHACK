@@ -49,7 +49,7 @@ The event workflows above use SQLite and server-side authorization. Legacy brows
 
 ## API and data movement
 
-OpenAPI is served at `/dogfood-api/openapi.json`. Organizer exports are available as CSV and JSON. JSON import into an unpublished event restores tracks, prizes, teams, projects, details, and memberships for accounts that already exist in the destination database. Reviews, votes, comments, and role memberships remain in the export but are not restored by import.
+OpenAPI is served at `/dogfood-api/openapi.json`. Organizer exports are available as CSV and JSON. Full JSON archives restore into a new empty event, including rubric versions, reviews, votes, comments, roles, track scopes, custom questions, and published snapshots. IDs are remapped and accounts are matched by email. Unknown historical identities are locked until their owners use an organizer-issued invitation from the restored event to set a password. Passwords, sessions, and webhook secrets are never transferred. Original record payloads remain as provenance; published certificates are signed afresh by the destination server. Partial team/project JSON import remains available.
 
 Webhooks use an HMAC-SHA256 body signature in `X-Dogfood-Signature`. The signing secret is shown once when a webhook is created. Failed deliveries can be retried on later writes or manually, up to three attempts. Published certificates and judge records have public verification URLs backed by the server's signing key; they are not independently verifiable offline.
 
@@ -78,6 +78,6 @@ For a five-minute event walkthrough, use [DEMO.md](DEMO.md). A recording is a se
 
 ## Current limits
 
-Community voting is tied to a local account without email verification, so one person could create multiple accounts. Rate limits apply per account. JSON import does not reconstruct review or voting history. Some workspace panels and arcade leaderboards are browser-local. Email delivery, account recovery, and production deployment hardening are not included.
+Community voting is tied to a local account without email verification, so one person could create multiple accounts. Rate limits apply per account. Some workspace panels and arcade leaderboards are browser-local. Email delivery, account recovery, and production deployment hardening are not included.
 
 The project is released under the [MIT license](LICENSE).

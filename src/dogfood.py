@@ -171,6 +171,15 @@ CREATE TABLE IF NOT EXISTS event_questions (
  code TEXT NOT NULL, label TEXT NOT NULL, required INTEGER NOT NULL DEFAULT 0,
  position INTEGER NOT NULL, PRIMARY KEY(event_id,code)
 );
+CREATE TABLE IF NOT EXISTS archive_provenance (
+ event_id TEXT PRIMARY KEY REFERENCES events(id) ON DELETE CASCADE,
+ source_event_json TEXT NOT NULL, original_records_json TEXT NOT NULL,
+ imported_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS archive_accounts (
+ event_id TEXT NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+ user_id TEXT NOT NULL REFERENCES users(id), PRIMARY KEY(event_id,user_id)
+);
 CREATE TABLE IF NOT EXISTS rubrics (
  id TEXT PRIMARY KEY, event_id TEXT NOT NULL REFERENCES events(id) ON DELETE CASCADE,
  version INTEGER NOT NULL, active INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL,
@@ -686,6 +695,107 @@ def calculate_results(conn: sqlite3.Connection, event_id: str) -> list[dict]:
                                           -(x["adjusted_score"] or 0), x["project_id"]))
 
 
+def restore_archive(conn, event_id, archive, actor):
+    """Restore a complete portable archive into an empty event, atomically.
+
+    IDs are remapped, existing accounts are matched by email, and new historical
+    identities are locked until an organizer-issued invitation activates them.
+    Secrets are never imported, and certificates are signed anew at destination.
+    """
+    conn.execute("BEGIN IMMEDIATE")
+    source = archive.get("event")
+    require(isinstance(source, dict), 422, "Archive event is required")
+    require(not conn.execute("SELECT 1 FROM teams WHERE event_id=?", (event_id,)).fetchone() and
+            not conn.execute("SELECT 1 FROM assignments WHERE event_id=?", (event_id,)).fetchone(),
+            409, "Restore a full archive into a new empty event")
+    tables = ["tracks", "prizes", "event_questions", "event_roles", "judge_track_scopes", "teams",
+              "team_members", "projects", "project_details", "rubrics", "criteria", "assignments",
+              "reviews", "criterion_scores", "votes", "comments", "result_snapshots", "audit_events"]
+    for table in ["users", *tables]:
+        rows = archive.get(table, [])
+        require(isinstance(rows, list) and len(rows) <= 10000 and all(isinstance(r, dict) for r in rows),
+                422, "Invalid archive table: " + table)
+    mappings = {table: {str(row["id"]): uid("import") for row in archive.get(table, [])}
+                for table in ["tracks", "prizes", "teams", "projects", "rubrics", "criteria", "assignments", "reviews", "votes", "comments"]}
+    for table, mapping in mappings.items():
+        require(len(mapping) == len(archive.get(table, [])), 422, "Duplicate source IDs in " + table)
+    users, locked = {}, []
+    for row in archive.get("users", []):
+        email = clean(row.get("email", ""), 200).lower()
+        require(re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email), 422, "Invalid archived account email")
+        account = user_by_email(conn, email)
+        if not account:
+            account_id = uid("archived")
+            conn.execute("INSERT INTO users VALUES(?,?,?,?,?,?)",
+                         (account_id, email, clean(row.get("name") or email, 100), "!imported", 0, iso()))
+            account = conn.execute("SELECT * FROM users WHERE id=?", (account_id,)).fetchone()
+            locked.append(email)
+        users[str(row["id"])] = account["id"]
+        if account["password_hash"] == "!imported":
+            conn.execute("INSERT OR IGNORE INTO archive_accounts VALUES(?,?)", (event_id, account["id"]))
+    mappings["users"] = users
+
+    def mapped(table, value):
+        require(str(value) in mappings[table], 422, f"Missing {table} reference: {value}")
+        return mappings[table][str(value)]
+
+    conn.execute("DELETE FROM criteria WHERE rubric_id IN (SELECT id FROM rubrics WHERE event_id=?)", (event_id,))
+    for table in ["rubrics", "tracks", "prizes", "event_questions", "judge_track_scopes"]:
+        conn.execute("DELETE FROM " + table + " WHERE event_id=?", (event_id,))
+    references = {"team_id":"teams", "track_id":"tracks", "project_id":"projects", "rubric_id":"rubrics",
+                  "criterion_id":"criteria", "assignment_id":"assignments", "review_id":"reviews",
+                  "user_id":"users", "judge_user_id":"users", "created_by":"users"}
+    for table in tables:
+        columns = {r[1] for r in conn.execute("PRAGMA table_info(" + table + ")")}
+        for original in archive.get(table, []):
+            row = {k:v for k,v in original.items() if k in columns}
+            if "event_id" in columns:
+                row["event_id"] = event_id
+            if table in mappings:
+                row["id"] = mapped(table, original["id"])
+            if table == "audit_events":
+                row.pop("id", None)
+                row["actor_id"] = users.get(str(original.get("actor_id")))
+                target = str(original.get("target_id"))
+                row["target_id"] = next((m[target] for m in mappings.values() if target in m), original.get("target_id"))
+            for key, target in references.items():
+                if key in row and row[key] is not None:
+                    row[key] = mapped(target, row[key])
+            if table == "judge_track_scopes":
+                scope = json.loads(row["track_ids"])
+                row["track_ids"] = json.dumps(None if scope is None else [mapped("tracks", t) for t in scope])
+            if table == "projects":
+                row["duplicate_of"] = mapped("projects", row["duplicate_of"]) if row.get("duplicate_of") else None
+                row["source_fixture_id"] = "archive:" + event_id + ":" + str(original["id"]) if row["duplicate_of"] else None
+                require(row.get("status") in ("draft", "submitted"), 422, "Invalid project status")
+            if table == "event_roles":
+                require(row.get("role") in ("participant", "judge", "organizer"), 422, "Invalid archived role")
+            names = list(row)
+            verb = "INSERT OR IGNORE" if table == "event_roles" else "INSERT"
+            conn.execute(verb + " INTO " + table + "(" + ",".join(names) + ") VALUES(" + ",".join("?" for _ in names) + ")",
+                         [row[k] for k in names])
+    for project in conn.execute("SELECT id FROM projects WHERE event_id=? AND status='submitted'", (event_id,)):
+        validate_project_answers(conn, project["id"])
+    require(source.get("status") in ("draft", "open", "judging", "voting", "published"), 422, "Invalid event status")
+    require(bool(source.get("published_at")) == (source["status"] == "published"), 422, "Inconsistent publication state")
+    dates = {key: iso(parse_time(source[key])) if source.get(key) else None
+             for key in ("starts_at", "submissions_close", "judging_close", "voting_close", "published_at")}
+    require(dates["starts_at"] and dates["submissions_close"] and dates["starts_at"] < dates["submissions_close"],
+            422, "Invalid archive event dates")
+    conn.execute("UPDATE events SET description=?,starts_at=?,submissions_close=?,judging_close=?,voting_close=?,published_at=?,status=? WHERE id=?",
+                 (clean(source.get("description", ""), 2000), *dates.values(), source["status"], event_id))
+    conn.execute("INSERT INTO archive_provenance VALUES(?,?,?,?)",
+                 (event_id, json.dumps(source), json.dumps(archive.get("issued_records", [])), iso()))
+    if dates["published_at"]:
+        issue_event_records(conn, event_id, dates["published_at"])
+    audit(conn, "archive_restore", actor["id"], event_id, detail=json.dumps({"source": source.get("id"), "locked_accounts": len(locked)}))
+    return {"restored": True, "teams_created":len(archive.get("teams", [])),
+            "projects_created":len(archive.get("projects", [])), "tracks_created":len(archive.get("tracks", [])),
+            "prizes_created":len(archive.get("prizes", [])), "members_added":len(archive.get("team_members", [])),
+            "members_skipped":0, "accounts_to_activate":locked,
+            "history":{t:len(archive.get(t, [])) for t in ("reviews", "votes", "comments", "result_snapshots", "event_roles")}}
+
+
 def issue_record(conn: sqlite3.Connection, event_id: str, kind: str,
                  subject_id: str, payload: dict, issued_at: str) -> None:
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
@@ -926,7 +1036,7 @@ class PortalHandler(BaseHTTPRequestHandler):
                     404, "Invalid invitation link")
             endpoint = "/api/invites/" if parts[0] == "join" else "/api/role-invites/"
             label = "team" if parts[0] == "join" else "event role"
-            page = """<!doctype html><html lang='en'><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Accept invitation · DOGFOOD</title><link rel='stylesheet' href='/assets/site.css'><body><header class='topbar'><a class='brand' href='/'>DOGFOOD<span> / PORTAL</span></a></header><main class='workspace'><div class='panel' style='max-width:560px;margin:60px auto'><p class='eyebrow'>YOU ARE INVITED</p><h2>Join this """ + label + """.</h2><p id='message'>Sign in or create an account, then accept the invitation.</p><form id='auth' class='form-stack'><label>Name (new accounts only)<input name='name'></label><label>Email<input name='email' type='email' required></label><label>Password<input name='password' type='password' required></label><div class='inline-actions'><button name='mode' value='login' class='button ghost'>Sign in</button><button name='mode' value='register' class='button ghost'>Create account</button></div></form><button id='accept' class='button primary' style='margin-top:20px'>Accept invitation →</button></div></main><script>const endpoint=""" + json.dumps(endpoint + parts[1] + "/accept") + """;const message=document.getElementById('message');async function request(path,method,body){const r=await fetch(path,{method,headers:{'Content-Type':'application/json'},body:JSON.stringify(body),credentials:'same-origin'});const data=await r.json();if(!r.ok)throw Error(data.error||'Request failed');return data}document.getElementById('auth').onsubmit=async e=>{e.preventDefault();const f=new FormData(e.target);try{await request('/api/'+e.submitter.value,'POST',Object.fromEntries(f));message.textContent='Signed in. Accept the invitation below.'}catch(err){message.textContent=err.message}};document.getElementById('accept').onclick=async()=>{try{await request(endpoint,'POST',{});message.textContent='Invitation accepted. Open your workspace to continue.';document.getElementById('accept').disabled=true}catch(err){message.textContent=err.message}};</script></body></html>"""
+            page = """<!doctype html><html lang='en'><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Accept invitation · DOGFOOD</title><link rel='stylesheet' href='/assets/site.css'><body><header class='topbar'><a class='brand' href='/'>DOGFOOD<span> / PORTAL</span></a></header><main class='workspace'><div class='panel' style='max-width:560px;margin:60px auto'><p class='eyebrow'>YOU ARE INVITED</p><h2>Join this """ + label + """.</h2><p id='message'>Sign in or create an account, then accept the invitation.</p><form id='auth' class='form-stack'><label>Name (new accounts only)<input name='name'></label><label>Email<input name='email' type='email' required></label><label>Password<input name='password' type='password' required></label><div class='inline-actions'><button name='mode' value='login' class='button ghost'>Sign in</button><button name='mode' value='register' class='button ghost'>Create account</button></div></form><button id='accept' class='button primary' style='margin-top:20px'>Accept invitation →</button></div></main><script>const endpoint=""" + json.dumps(endpoint + parts[1] + "/accept") + """;const message=document.getElementById('message');async function request(path,method,body){const r=await fetch(path,{method,headers:{'Content-Type':'application/json'},body:JSON.stringify(body),credentials:'same-origin'});const data=await r.json();if(!r.ok)throw Error(data.error||'Request failed');return data}document.getElementById('auth').onsubmit=async e=>{e.preventDefault();const f=new FormData(e.target);try{await request('/api/'+e.submitter.value,'POST',{...Object.fromEntries(f),invite_token:location.pathname.split('/').pop()});message.textContent='Signed in. Accept the invitation below.'}catch(err){message.textContent=err.message}};document.getElementById('accept').onclick=async()=>{try{await request(endpoint,'POST',{});message.textContent='Invitation accepted. Open your workspace to continue.';document.getElementById('accept').disabled=true}catch(err){message.textContent=err.message}};</script></body></html>"""
             self.send_bytes(200, page.encode("utf-8"), "text/html; charset=utf-8")
             return
         if path == "/projects" or re.fullmatch(r"/events/[^/]+/projects", path):
@@ -1007,8 +1117,20 @@ class PortalHandler(BaseHTTPRequestHandler):
             require(re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email) is not None, 422, "Valid email required")
             require(len(name) >= 2 and isinstance(password, str) and len(password) >= 10, 422,
                     "Name and password of at least ten characters required")
-            require(user_by_email(conn, email) is None, 409, "Email already registered")
-            account = create_user(conn, email, name, password)
+            existing = user_by_email(conn, email)
+            if existing:
+                invitation = conn.execute("SELECT * FROM role_invites WHERE token_hash=?",
+                                          (token_hash(str(body.get("invite_token", ""))),)).fetchone()
+                require(existing["password_hash"] == "!imported" and invitation is not None and
+                        invitation["email"] == email and not invitation["accepted_at"] and
+                        parse_time(invitation["expires_at"]) > now() and
+                        conn.execute("SELECT 1 FROM archive_accounts WHERE event_id=? AND user_id=?",
+                                     (invitation["event_id"], existing["id"])).fetchone(),
+                        409, "Email already registered; imported accounts need an invitation from their restored event")
+                account = existing["id"]
+                conn.execute("UPDATE users SET password_hash=?,name=? WHERE id=?", (password_hash(password), name, account))
+            else:
+                account = create_user(conn, email, name, password)
             token = create_session(conn, account)
             audit(conn, "register", account)
             self.send_json(201, {"id": account, "name": name},
@@ -1494,7 +1616,8 @@ class PortalHandler(BaseHTTPRequestHandler):
             if len(parts) == 4 and parts[3] == "export.json" and method == "GET":
                 self.must_role(conn, user, event_id, "organizer")
                 direct = ("tracks", "prizes", "teams", "projects", "rubrics", "assignments",
-                          "result_snapshots", "votes", "audit_events", "issued_records", "event_roles")
+                          "result_snapshots", "votes", "audit_events", "issued_records", "event_roles",
+                          "event_questions", "judge_track_scopes", "archive_provenance")
                 archive = {"schema": "dogfood-event-v1", "exported_at": iso(), "event": dict(event)}
                 for table in direct:
                     archive[table] = [dict(row) for row in conn.execute(
@@ -1515,8 +1638,10 @@ class PortalHandler(BaseHTTPRequestHandler):
                     FROM users u WHERE u.id IN (
                     SELECT user_id FROM event_roles WHERE event_id=? UNION
                     SELECT tm.user_id FROM team_members tm JOIN teams t ON t.id=tm.team_id WHERE t.event_id=? UNION
-                    SELECT judge_user_id FROM assignments WHERE event_id=?) ORDER BY u.id""",
-                    (event_id, event_id, event_id)).fetchall()]
+                    SELECT judge_user_id FROM assignments WHERE event_id=? UNION
+                    SELECT user_id FROM votes WHERE event_id=? UNION
+                    SELECT c.user_id FROM comments c JOIN projects p ON p.id=c.project_id WHERE p.event_id=?) ORDER BY u.id""",
+                    (event_id, event_id, event_id, event_id, event_id)).fetchall()]
                 self.send_bytes(200, json.dumps(archive, ensure_ascii=False, default=str).encode("utf-8"),
                                 "application/json; charset=utf-8",
                                 {"Content-Disposition": "attachment; filename=dogfood-event.json"})
@@ -1525,6 +1650,9 @@ class PortalHandler(BaseHTTPRequestHandler):
                 self.must_role(conn, user, event_id, "organizer")
                 require(event["published_at"] is None, 409, "Published event cannot be imported into")
                 body = self.body_json()
+                if body.get("schema") == "dogfood-event-v1":
+                    self.send_json(201, restore_archive(conn, event_id, body, user))
+                    return
                 teams = body.get("teams", [])
                 projects = body.get("projects", [])
                 require(isinstance(teams, list) and isinstance(projects, list) and

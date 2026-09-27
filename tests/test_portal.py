@@ -164,6 +164,46 @@ class PortalTests(unittest.TestCase):
         self.assertEqual(self.request("GET", project_path)[1]["project"]["custom_answers"]["problem"], "A real problem")
         self.assertEqual(self.request("PUT", path, {"questions": []}, org)[0], 409)
 
+    def test_full_archive_restores_fixture_history_and_locked_identities(self):
+        org = "dogfood-organizer-2026"
+        archive = self.request("GET", "/api/events/evt_01/export.json", token=org)[1]
+        renamed = next(u for u in archive["users"] if u["email"] == "marek.nowak@example.org")
+        renamed["email"] = "archive-owner-" + portal.uid("test") + "@example.org"
+        target = self.new_event()
+        status, restored, _ = self.request("POST", f"/api/events/{target}/import.json", archive, org)
+        self.assertEqual(status, 201, restored)
+        self.assertEqual(restored["projects_created"], 41)
+        self.assertEqual(restored["history"]["reviews"], 126)
+        self.assertIn(renamed["email"], restored["accounts_to_activate"])
+        exported = self.request("GET", f"/api/events/{target}/export.json", token=org)[1]
+        for table in ("projects", "teams", "reviews", "criterion_scores", "assignments", "judge_track_scopes"):
+            self.assertEqual(len(exported[table]), len(archive[table]), table)
+        ids = {r["id"] for r in exported["projects"]}
+        duplicate = next(r for r in exported["projects"] if r["duplicate_of"])
+        self.assertIn(duplicate["duplicate_of"], ids)
+        account = {"email": renamed["email"], "name": "Restored judge", "password": "restored-password-123"}
+        self.assertEqual(self.request("POST", "/api/register", account)[0], 409)
+        invite = self.request("POST", f"/api/events/{target}/role-invites", {"email": renamed["email"], "role": "judge"}, org)[1]
+        account["invite_token"] = invite["invite_path"].rsplit("/", 1)[1]
+        self.assertEqual(self.request("POST", "/api/register", account)[0], 201)
+        self.assertEqual(self.request("POST", "/api/login", account)[0], 200)
+        broken = json.loads(json.dumps(archive))
+        broken["criterion_scores"][0]["criterion_id"] = "missing"
+        empty = self.new_event()
+        self.assertEqual(self.request("POST", f"/api/events/{empty}/import.json", broken, org)[0], 422)
+        self.assertEqual(self.request("GET", f"/api/events/{empty}/projects")[1]["projects"], [])
+        self.assertEqual(len(self.request("GET", f"/api/events/{empty}")[1]["tracks"]), 2)
+        _, voter_cookie = self.register()
+        vote_project = self.request("GET", "/api/events/evt_vote_demo/projects")[1]["projects"][0]["id"]
+        self.assertEqual(self.request("POST", f"/api/projects/{vote_project}/comments", {"body": "Portable discussion"}, cookie=voter_cookie)[0], 201)
+        self.assertEqual(self.request("POST", "/api/events/evt_vote_demo/votes", {"project_id": vote_project}, cookie=voter_cookie)[0], 201)
+        public_archive = self.request("GET", "/api/events/evt_vote_demo/export.json", token=org)[1]
+        vote_target = self.new_event()
+        self.assertEqual(self.request("POST", f"/api/events/{vote_target}/import.json", public_archive, org)[0], 201)
+        roundtrip = self.request("GET", f"/api/events/{vote_target}/export.json", token=org)[1]
+        self.assertEqual(len(roundtrip["votes"]), len(public_archive["votes"]))
+        self.assertEqual([c["body"] for c in roundtrip["comments"]], [c["body"] for c in public_archive["comments"]])
+
     def test_jury_preview_has_a_submittable_review(self):
         judge = "dogfood-judge-a-2026"
         judge_id = self.request("GET", "/api/me", token=judge)[1]["user"]["id"]
@@ -244,7 +284,13 @@ class PortalTests(unittest.TestCase):
         self.assertEqual(imported[1]["tracks_created"], 1)
         self.assertEqual(imported[1]["members_added"], 1)
         self.assertEqual(self.request("POST", f"/api/events/{destination}/import.json",
-                                      archive, organizer)[1]["projects_created"], 0)
+                                      archive, organizer)[0], 409)
+        restored = self.request("GET", f"/api/events/{destination}/export.json", token=organizer)[1]
+        for table in ("reviews", "criterion_scores", "assignments", "result_snapshots", "event_roles"):
+            self.assertEqual(len(restored[table]), len(archive[table]), table)
+        self.assertEqual(restored["result_snapshots"][0]["adjusted_score"], archive["result_snapshots"][0]["adjusted_score"])
+        self.assertEqual(len(restored["issued_records"]), len(archive["issued_records"]))
+        self.assertEqual(restored["event"]["status"], "published")
         copied = self.request("GET", f"/api/events/{destination}/projects")[1]["projects"]
         self.assertEqual(copied[0]["tech_tags"], ["Python", "SQLite"])
         with portal.db() as conn:

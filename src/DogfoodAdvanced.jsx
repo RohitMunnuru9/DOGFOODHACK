@@ -72,14 +72,14 @@ export default function DogfoodAdvanced({event, role, request, onImported}) {
       <div className="grid gap-5 xl:grid-cols-2">
         <section className={panel}>
           <h3 className="text-lg font-black">Move your data</h3>
-          <p className="mt-1 text-sm text-gray-500">Download an event archive or import tracks, prizes, teams and projects from JSON. Existing accounts regain matching team memberships.</p>
+          <p className="mt-1 text-sm text-gray-500">Restore a full archive into a new empty event, including judging, votes, comments and published results. New historical accounts stay locked until you send their owners an event invitation. Credentials and webhook secrets are never imported.</p>
           <div className="mt-4 flex flex-wrap gap-2"><a className={button} href={`/dogfood-api/events/${eventId}/export.json`}>Export event JSON ↓</a><a className={secondary} href={`/dogfood-api/events/${eventId}/export.csv`}>Results CSV ↓</a></div>
           <form className="mt-5 space-y-3" onSubmit={event => { event.preventDefault(); if (!file) return; act(async () => {
             const payload = JSON.parse(await file.text());
             const result = await request(`/events/${eventId}/import.json`, 'POST', payload);
             await onImported();
             return result;
-          }, result => `Imported ${result.teams_created} teams, ${result.projects_created} projects, ${result.tracks_created} tracks and ${result.prizes_created} prizes. ${result.members_added} members restored${result.members_skipped ? `; ${result.members_skipped} accounts were unavailable` : ''}.`); }}>
+          }, result => `Imported ${result.teams_created} teams, ${result.projects_created} projects, ${result.tracks_created} tracks and ${result.prizes_created} prizes. ${result.members_added} members restored${result.history ? `; ${result.history.reviews} reviews, ${result.history.votes} votes and ${result.history.comments} comments restored` : ''}${result.accounts_to_activate?.length ? `; invite these accounts to activate them: ${result.accounts_to_activate.join(', ')}` : ''}.`); }}>
             <label className="block text-xs font-bold uppercase tracking-wide text-gray-500">Import JSON file<input className={`${input} mt-2`} type="file" accept=".json,application/json" onChange={event=>setFile(event.target.files?.[0] || null)} /></label>
             <button className={secondary} disabled={!file || busy || !!event.published_at}>Import event data</button>
             {event.published_at && <p className="text-xs text-gray-500">Published events are frozen; import into a new event.</p>}
