@@ -31,13 +31,13 @@ export default function PortalApp() {
   };
   useEffect(() => { refresh().catch(failure => setError(failure.message)); }, []);
 
-  const authenticate = async (body, mode = register ? 'register' : 'login') => {
+  const authenticate = async (body, mode = register ? 'register' : 'login', preferredRole) => {
     setBusy(true); setError('');
     try {
       await api(mode, body);
       const next = await refresh();
-      setRole(next.user.is_admin || next.roles.some(item => item.role === 'organizer') ? 'admin' :
-        next.roles.some(item => item.role === 'judge') ? 'jury' : 'contestant');
+      setRole(preferredRole || (next.user.is_admin || next.roles.some(item => item.role === 'organizer') ? 'admin' :
+        next.roles.some(item => item.role === 'judge') ? 'jury' : 'contestant'));
     } catch (failure) { setError(failure.message); }
     finally { setBusy(false); }
   };
@@ -78,8 +78,8 @@ export default function PortalApp() {
         {identity.demo_mode && <section className="mt-8 rounded-2xl border border-[#d8dfd1] p-5">
           <h2 className="font-bold">Try a demo account</h2>
           <p className="my-2 text-sm">These accounts share the local sample events. Choose one explicitly to explore.</p>
-          <div className="flex flex-wrap gap-2">{[['Organizer','organizer@demo.local'],['Judge','marek.nowak@example.org'],['Participant','participant@demo.local']].map(([label,email]) =>
-            <button key={email} className={button} disabled={busy} onClick={() => authenticate({email,password:'dogfood-demo-2026'},'login')}>{label}</button>)}</div>
+          <div className="flex flex-wrap gap-2">{[['Organizer','organizer@demo.local','admin'],['Judge','marek.nowak@example.org','jury'],['Participant','participant@demo.local','contestant']].map(([label,email,workspace]) =>
+            <button key={email} className={button} disabled={busy} onClick={() => authenticate({email,password:'dogfood-demo-2026'},'login',workspace)}>{label}</button>)}</div>
         </section>}
       </main> : <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
         <nav aria-label="Workspace" className="mb-6 flex flex-wrap gap-3">

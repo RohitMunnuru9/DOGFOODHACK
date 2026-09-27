@@ -1,5 +1,18 @@
 import {test, expect} from '@playwright/test';
 
+test('a demo account with multiple roles opens the workspace named by its button', async ({page}) => {
+  const response = await page.request.post('/dogfood-api/events/evt_demo/roles', {
+    headers:{Authorization:'Bearer dogfood-organizer-2026'},
+    data:{email:'participant@demo.local',role:'judge'},
+  });
+  expect(response.ok()).toBe(true);
+  await page.goto('/');
+  await page.getByRole('button',{name:'Participant',exact:true}).click();
+  await expect(page.getByRole('button',{name:'Participate',exact:true})).toHaveAttribute('aria-pressed','true');
+  await expect(page.getByTestId('account-email')).toHaveText('participant@demo.local');
+  await expect(page.getByRole('heading',{name:'Your team',exact:true})).toBeVisible();
+});
+
 test('a registered account survives reloads and workspace switches', async ({page}) => {
   const email = `browser-${Date.now()}@example.org`;
   await page.goto('/');
