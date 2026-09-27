@@ -1,3 +1,4 @@
+import {createPortal} from 'react-dom';
 import React, { useState, useEffect, useRef } from 'react';
 import { Trophy, Play, ArrowLeft, Gamepad2, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -287,8 +288,8 @@ const LeaderboardModal = ({ onClose, previewRole }) => {
         fetchAllScores();
     }, [previewRole]);
 
-    return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    return createPortal(
+        <div role="dialog" aria-modal="true" aria-label="Arcade leaderboard" className="clay-arcade-leaderboard fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
             <motion.div
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
@@ -296,9 +297,9 @@ const LeaderboardModal = ({ onClose, previewRole }) => {
             >
                 <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-indigo-50">
                      <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                        <Trophy className="text-yellow-500" /> Global Leaderboard
+                        <Trophy className="text-yellow-500" /> Arcade Leaderboard
                      </h3>
-                     <button onClick={onClose} className="p-1 hover:bg-gray-200 rounded-full"><X size={20} /></button>
+                     <button aria-label="Close leaderboard" onClick={onClose} className="p-1 hover:bg-gray-200 rounded-full"><X size={20} /></button>
                 </div>
 
                 <div className="flex-1 overflow-x-auto overflow-y-auto p-0 custom-scrollbar">
@@ -344,10 +345,10 @@ const LeaderboardModal = ({ onClose, previewRole }) => {
                     )}
                 </div>
                 <div className="p-3 text-center text-xs text-gray-400 bg-gray-50 border-t border-gray-100">
-                    Final Score = Average of all game scores
+                    Scores saved in this browser · Final score is the average of all six games
                 </div>
             </motion.div>
-        </div>
+        </div>, document.body
     );
 };
 
@@ -355,6 +356,25 @@ const ArcadeDashboard = ({ user, customUserName, previewRole }) => {
   const [activeGame, setActiveGame] = useState(null);
   const [personalScores, setPersonalScores] = useState({});
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+
+  useEffect(() => {
+      if (!activeGame && !showLeaderboard) return;
+      const previous = document.activeElement;
+      const overflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      const app=document.querySelector('.clay-app');
+      if(app) app.inert=true;
+      const escape = event => {if(event.key==='Escape'){setActiveGame(null);setShowLeaderboard(false);}};
+      document.addEventListener('keydown',escape);
+      return () => {
+          document.body.style.overflow=overflow;document.removeEventListener('keydown',escape);
+          if(app) app.inert=false;
+          requestAnimationFrame(()=>{
+              if(activeGame) document.querySelector(`[aria-label="Play ${GAMES.find(g=>g.id===activeGame).title}"]`)?.focus();
+              else if(previous?.isConnected) previous.focus();
+          });
+      };
+  }, [activeGame, showLeaderboard]);
 
   // Ref to hold the latest scores for immediate race-condition checks
   const personalScoresRef = useRef({});
@@ -442,13 +462,14 @@ const ArcadeDashboard = ({ user, customUserName, previewRole }) => {
   const GameComponent = activeGame ? GAMES.find(g => g.id === activeGame)?.component : null;
 
   if (activeGame && GameComponent) {
-      return (
-          <div className="fixed inset-0 z-[200] bg-zinc-900">
+      return createPortal(
+          <div className="clay-arcade-game fixed inset-0 z-[200] bg-white" role="dialog" aria-modal="true" aria-label={GAMES.find(g=>g.id===activeGame).title}>
               <GameComponent
                 onExit={() => setActiveGame(null)}
                 onGameOver={(score) => handleGameOver(activeGame, score)}
               />
-          </div>
+              <button className="clay-arcade-back" onClick={()=>setActiveGame(null)}><ArrowLeft size={16}/> Back to arcade</button>
+          </div>, document.body
       );
   }
 
@@ -483,6 +504,7 @@ const ArcadeDashboard = ({ user, customUserName, previewRole }) => {
 
                         <div className="flex gap-2 mt-auto shrink-0">
                             <button
+                                aria-label={`Play ${game.title}`}
                                 onClick={() => setActiveGame(game.id)}
                                 className="portal-arcade-card__play flex-1 py-3 bg-gray-900 text-white rounded-xl font-bold hover:bg-black transition-colors flex items-center justify-center gap-2 shadow-lg"
                             >
@@ -491,7 +513,7 @@ const ArcadeDashboard = ({ user, customUserName, previewRole }) => {
                             <button
                                 onClick={() => setShowLeaderboard(true)}
                                 className="portal-arcade-card__leaderboard px-4 py-3 bg-indigo-50 text-indigo-600 rounded-xl font-bold hover:bg-indigo-100 transition-colors"
-                                title="Global Leaderboard"
+                                title="Arcade Leaderboard"
                             >
                                 <Trophy size={18} />
                             </button>

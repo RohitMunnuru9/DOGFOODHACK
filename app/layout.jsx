@@ -1,5 +1,6 @@
 import '../src/base.css';
 import '../src/clay.css';
+import '../src/arcade.css';
 
 export const metadata = {
   title: 'DOGFOOD 2026 — Build what matters',

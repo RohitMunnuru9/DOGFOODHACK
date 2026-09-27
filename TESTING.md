@@ -69,3 +69,5 @@ The subsequent UI makeover passed 18 browser regressions against the optimized N
 Every organizer section was checked at a 390px viewport for horizontal overflow; desktop and mobile screenshots were also inspected. The actual interface and its control behavior are described in [docs/clay-ui.md](docs/clay-ui.md).
 
 These redesign checks used a separate temporary database with the Python API on port 8000 and the production Next server on port 14000. Docker Desktop was unavailable during this pass, so the updated container image was not rebuilt or reverified; the earlier Docker results above describe the preceding version.
+
+Arcade restoration adds two browser regressions, bringing the suite to 20 tests. They launch and start all six games, verify canvas/3D rendering surfaces, exercise return controls and focus, open the leaderboard, read a previously saved score after reload, and check every role plus the phone layout. The existing browser-local score storage and its Node regression remain unchanged.

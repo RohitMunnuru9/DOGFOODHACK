@@ -6,6 +6,8 @@ The signed-in portal uses a white clay design with warm terracotta, sage, and sa
 
 The organizer workspace opens on Overview. Submissions, Teams, Judging, Results, Community, and Settings separate the work into focused views. Participants open their submission workspace; judges open their assigned reviews. Sidebar and role highlights move with spring transitions.
 
+Arcade is available in every role. Its clay lobby retains Stacker 3D, Crossy Road, Glass Ascent, Whack-a-Mole, Flatline, and Hex Ultra, including their original gameplay. Games load only when opening Arcade. Scores and the arcade leaderboard use the existing browser-local store and are separate from event judging. Full-screen games support a persistent Back to arcade control and Escape; exiting restores focus to the game's launch button. Stacker's original 3D geometry styles are included independently of the retired page theme.
+
 Views fade between sections while keeping form elements mounted, so switching tabs preserves unfinished form entries. Event changes replace the old content with a skeleton until a complete, current event snapshot is ready. Stale responses cannot overwrite a newer selection. Saving uses an indeterminate progress strip while retaining the visible content.
 
 ## Controls and motion

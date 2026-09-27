@@ -1,0 +1,144 @@
+/* --- STACKER 3D GAME CSS --- */
+:root {
+  --block-height: 40px;
+}
+
+.isometric-scene {
+  transform-style: preserve-3d;
+  width: 0;
+  height: 0;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  /* Rotations applied in JS */
+}
+
+.cube {
+  position: absolute;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.cube-face {
+  position: absolute;
+  box-sizing: border-box;
+  /* Ensure no gaps by using slightly larger dimensions or outline */
+  width: 100%;
+  height: 100%;
+  background-color: currentColor;
+  /* Use backface-visibility: visible (default) so we can see inside faces if needed,
+     though for a solid cube we usually want hidden.
+     However, due to rotation directions, we might be looking at the 'back' of a div.
+     Safest to keep it visible unless we are optimizing a massive scene. */
+  backface-visibility: visible;
+}
+
+/* Top Face - Lid */
+.cube-top {
+  width: 100%;
+  height: 100%;
+  transform: translateZ(var(--block-height));
+  /* Highlight */
+  background-image: linear-gradient(rgba(255,255,255,0.15), rgba(255,255,255,0.15));
+}
+
+/* South Face (Front, Y+) */
+/* Anchor at Bottom Edge (Y=100%) of the base square */
+.cube-south {
+  width: 100%;
+  height: var(--block-height);
+  transform-origin: top;
+  top: 100%;
+  left: 0;
+  /* Rotate X 90deg makes it stand up pointing to +Z */
+  transform: rotateX(-90deg);
+  /* Wait, if I rotateX(-90), the normal points Y+. Correct. */
+  /* But the face goes to Z- (down). */
+  /* We want it to go Z+ (up). */
+  /* So we must use rotateX(90deg). Normal points -Y (backwards). */
+  /* This is why backface-visibility: hidden killed it. */
+  transform: rotateX(90deg);
+
+  /* Shadow */
+  background-image: linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.1));
+}
+
+/* East Face (Side, X+) */
+/* Anchor at Right Edge (X=100%) of the base square */
+.cube-east {
+  width: var(--block-height);
+  height: 100%;
+  transform-origin: left;
+  top: 0;
+  left: 100%;
+  /* Rotate Y -90deg makes it stand up pointing to +Z? */
+  /* RotateY(90) -> Normal +X -> folds "back" to -Z. */
+  /* RotateY(-90) -> Normal -X -> folds "front" to +Z? */
+  /* Let's trace: Normal starts Z+. */
+  /* RotateY(90): Z+ -> X+. Normal X+. Geometry lies in YZ plane. */
+  /* But we want geometry to go UP (Z+). */
+  /* If origin is Left (X=0 of face). */
+  /* Position is Left: 100% (X=Width of base). */
+  /* We want it to span Z=0 to Z=H. */
+  /* RotateY(-90) turns X axis to Z axis? */
+  /* X -> Z. */
+  /* So width (X) becomes Height (Z). */
+  /* Yes. */
+  /* Normal? Z+ -> -X. */
+  /* We look from -X? No we look from -X, -Y, +Z area? */
+  /* Camera is rotateZ(45). We look at corner between South and East. */
+  /* So we see South Face and East Face. */
+  /* South Face Normal should point Y+ ? No. */
+  /* If block is at (0,0). Camera is at (large, large, large). */
+  /* Wait, camera transform is `rotateX(60) rotateZ(45) translateZ(...)`. */
+  /* This is a "look down" camera. */
+  /* Scene is rotated. */
+  /* Effectively we are looking from South-East. */
+  /* So we need South Face (Y+) and East Face (X+). */
+  /* Their normals should point Y+ and X+. */
+  /* My transforms: */
+  /* South: rotateX(90). Normal -Y. (Backwards). */
+  /* East: rotateY(-90). Normal -X. (Backwards). */
+  /* So we are looking at the BACK of these faces. */
+  /* With backface-visibility: hidden, they vanish. */
+  /* With backface-visibility: visible, we see them (as long as color is solid). */
+
+  transform: rotateY(-90deg);
+
+  /* Darker Shadow */
+  background-image: linear-gradient(rgba(0,0,0,0.2), rgba(0,0,0,0.2));
+}
+
+
+/* Falling Animation */
+@keyframes fall {
+    0% { transform: translate3d(var(--tx), var(--ty), var(--tz)); opacity: 1; }
+    100% { transform: translate3d(var(--tx), var(--ty), -800px) rotateZ(45deg); opacity: 0; }
+}
+
+.falling-animation {
+    animation: fall 0.8s ease-in forwards;
+    pointer-events: none;
+}
+
+
+/* Keep the original game geometry; only the lobby adopts the clay material. */
+.portal-arcade .portal-arcade-card{background:#fff;border:1px solid #e7e8e1;box-shadow:6px 8px 20px #5963420b,inset 2px 2px 4px white,inset -2px -3px 6px #87946c10;border-radius:24px}
+.portal-arcade .portal-arcade-card__scene{background:#f0f2e9;box-shadow:inset 0 -3px 8px #7989630a}
+.portal-arcade .portal-arcade-card:nth-child(3n+2) .portal-arcade-card__scene{background:#f7ede5}
+.portal-arcade .portal-arcade-card:nth-child(3n) .portal-arcade-card__scene{background:#f5f1e4}
+.portal-arcade .portal-arcade-card__play,.clay-arcade-back{background:#bd8066;color:white;border:1px solid #b4765d;box-shadow:inset 1px 2px 3px #ffffff60,0 3px 7px #75554015}
+.portal-arcade .portal-arcade-card__leaderboard{background:#edf1e5;color:#647857}
+.portal-arcade .text-indigo-600{color:#8d664c}
+.portal-arcade-card button{transition:transform .2s,box-shadow .2s,background .2s}
+.portal-arcade-card button:hover{transform:translateY(-2px);box-shadow:0 5px 12px #75554020}
+.clay-arcade-back{position:absolute;z-index:300;bottom:max(16px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);padding:10px 16px;border-radius:14px;display:flex;gap:8px;align-items:center;font:600 13px/1.3 'Segoe UI',sans-serif}
+.clay-arcade-game button:focus-visible,.clay-arcade-leaderboard button:focus-visible{outline:3px solid #b27c5c;outline-offset:3px}
+.clay-arcade-leaderboard{background:#626a5560}
+.clay-arcade-leaderboard .bg-indigo-50{background:#eef2e6}
+.clay-arcade-leaderboard [class*=text-indigo]{color:#748665}
+@media(max-width:700px){.portal-arcade>div.grid{padding:12px 0 40px}.clay-arcade-back{font-size:11px;padding:8px 12px}}
+@media(prefers-reduced-motion:reduce){.portal-arcade-card,.portal-arcade-card button{transition:none!important}}
+
+/* A moving start target is difficult to activate with a pointer or assistive tools. */
+.clay-arcade-game button.animate-bounce{animation:none}
