@@ -81,6 +81,41 @@ class PortalTests(unittest.TestCase):
         self.assertEqual(status, 201)
         return email, headers["Set-Cookie"].split(";", 1)[0]
 
+    def test_track_scopes_block_assignment_and_recheck_existing_reviews(self):
+        org, judge = "dogfood-organizer-2026", "dogfood-judge-a-2026"
+        event_id = self.new_event()
+        tracks = self.request("GET", f"/api/events/{event_id}")[1]["tracks"]
+        team = self.request("POST", f"/api/events/{event_id}/teams", {"name": "Scoped team"},
+                            "dogfood-participant-2026")[1]["id"]
+        project = self.request("POST", f"/api/events/{event_id}/projects", {
+            "team_id": team, "track_id": tracks[0]["id"], "title": "Scoped entry", "submit": True},
+            "dogfood-participant-2026")[1]["id"]
+        path = f"/api/events/{event_id}/roles"
+        grant = {"email": "marek.nowak@example.org", "role": "judge", "track_ids": [tracks[1]["id"]]}
+        self.assertEqual(self.request("POST", path, grant, org)[0], 200)
+        assignment = {"project_id": project, "judge_user_id": "judge_jdg_08"}
+        self.assertEqual(self.request("POST", f"/api/events/{event_id}/assignments", assignment, org)[0], 422)
+        grant["track_ids"] = [tracks[0]["id"]]
+        self.assertEqual(self.request("POST", path, grant, org)[0], 200)
+        status, created, _ = self.request("POST", f"/api/events/{event_id}/assignments", assignment, org)
+        self.assertEqual(status, 201)
+        scores_path = "/api/judges/judge_jdg_08/scores"
+        own = self.request("GET", scores_path, token=judge)[1]["assignments"]
+        review = next(r for r in own if r["assignment_id"] == created["id"])
+        values = {c["code"]: 4 for c in review["criteria"]}
+        review_path = f"/api/assignments/{created['id']}/review"
+        self.assertEqual(self.request("PUT", review_path, {"scores": values, "submit": True}, judge)[0], 200)
+        grant["track_ids"] = [tracks[1]["id"]]
+        self.request("POST", path, grant, org)
+        self.assertEqual(self.request("PUT", review_path, {"scores": values, "submit": True}, judge)[0], 403)
+        own = self.request("GET", scores_path, token=judge)[1]["assignments"]
+        self.assertFalse(any(r["assignment_id"] == created["id"] for r in own))
+        self.assertEqual(self.request("POST", path, {**grant, "track_ids": ["trk_01"]}, org)[0], 422)
+        fixture = json.loads((ROOT / "fixtures.json").read_text())
+        with portal.db() as conn:
+            for item in fixture["judges"]:
+                self.assertEqual(portal.judge_track_scope(conn, "evt_01", "judge_" + item["id"]), item["tracks"])
+
     def test_jury_preview_has_a_submittable_review(self):
         judge = "dogfood-judge-a-2026"
         judge_id = self.request("GET", "/api/me", token=judge)[1]["user"]["id"]

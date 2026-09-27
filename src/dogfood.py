@@ -116,6 +116,15 @@ CREATE TABLE IF NOT EXISTS tracks (
  id TEXT PRIMARY KEY, event_id TEXT NOT NULL REFERENCES events(id) ON DELETE CASCADE,
  name TEXT NOT NULL, UNIQUE(event_id,name)
 );
+CREATE TABLE IF NOT EXISTS judge_track_scopes (
+ event_id TEXT NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+ user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+ track_ids TEXT NOT NULL, PRIMARY KEY(event_id,user_id)
+);
+CREATE TABLE IF NOT EXISTS role_invite_scopes (
+ token_hash TEXT PRIMARY KEY REFERENCES role_invites(token_hash) ON DELETE CASCADE,
+ track_ids TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS prizes (
  id TEXT PRIMARY KEY, event_id TEXT NOT NULL REFERENCES events(id) ON DELETE CASCADE,
  title TEXT NOT NULL, description TEXT NOT NULL DEFAULT ''
@@ -258,6 +267,30 @@ def can_manage(conn: sqlite3.Connection, user: sqlite3.Row | None, event_id: str
     return role(conn, user, event_id, "organizer")
 
 
+def validate_track_scope(conn, event_id, tracks):
+    if tracks is None:
+        return None  # Explicit event-wide judge.
+    require(isinstance(tracks, list) and all(isinstance(t, str) for t in tracks),
+            422, "track_ids must be an array or null for all tracks")
+    available = {r[0] for r in conn.execute("SELECT id FROM tracks WHERE event_id=?", (event_id,))}
+    require(set(tracks) <= available, 422, "Judge tracks must belong to this event")
+    return sorted(set(tracks))
+
+
+def judge_track_scope(conn, event_id, judge_id):
+    row = conn.execute("SELECT track_ids FROM judge_track_scopes WHERE event_id=? AND user_id=?",
+                       (event_id, judge_id)).fetchone()
+    return json.loads(row[0]) if row else None
+
+
+def judge_can_review(conn, judge_id, event_id, track_id):
+    user = conn.execute("SELECT * FROM users WHERE id=?", (judge_id,)).fetchone()
+    if not role(conn, user, event_id, "judge"):
+        return False
+    scope = judge_track_scope(conn, event_id, judge_id)
+    return scope is None or track_id in scope
+
+
 def is_team_member(conn: sqlite3.Connection, user: sqlite3.Row | None, team_id: str) -> bool:
     return bool(user and conn.execute("SELECT 1 FROM team_members WHERE team_id=? AND user_id=?",
                                       (team_id, user["id"])).fetchone())
@@ -354,6 +387,8 @@ def seed() -> None:
             jid = create_user(conn, item["email"], item["name"], DEMO_PASSWORD, "judge_" + item["id"])
             judge_ids[item["id"]] = jid
             conn.execute("INSERT OR IGNORE INTO event_roles VALUES(?,?,?)", (event["id"], jid, "judge"))
+            conn.execute("INSERT OR IGNORE INTO judge_track_scopes VALUES(?,?,?)",
+                         (event["id"], jid, json.dumps(item["tracks"])))
         # Keep the historical fixture closed for the checker, but provide a
         # separate pending review that can actually be submitted in the UI.
         review_event = "evt_review_demo"
@@ -1109,6 +1144,10 @@ class PortalHandler(BaseHTTPRequestHandler):
                 require(account is not None, 404, "Invitee must register first")
                 require(wanted in ("judge", "participant", "organizer"), 422, "Invalid role")
                 conn.execute("INSERT OR IGNORE INTO event_roles VALUES(?,?,?)", (event_id, account["id"], wanted))
+                if wanted == "judge" and "track_ids" in body:
+                    scope = validate_track_scope(conn, event_id, body["track_ids"])
+                    conn.execute("INSERT OR REPLACE INTO judge_track_scopes VALUES(?,?,?)",
+                                 (event_id, account["id"], json.dumps(scope)))
                 audit(conn, "role_invite", user["id"], event_id, account["id"], wanted)
                 self.send_json(200, {"ok": True, "user_id": account["id"]})
                 return
@@ -1124,6 +1163,9 @@ class PortalHandler(BaseHTTPRequestHandler):
                 conn.execute("INSERT INTO role_invites VALUES(?,?,?,?,?,?,?)",
                              (token_hash(token), event_id, email, wanted,
                               iso(now() + timedelta(days=7)), None, user["id"]))
+                if wanted == "judge":
+                    scope = validate_track_scope(conn, event_id, body.get("track_ids"))
+                    conn.execute("INSERT INTO role_invite_scopes VALUES(?,?)", (token_hash(token), json.dumps(scope)))
                 audit(conn, "role_invite_create", user["id"], event_id, detail=wanted + ":" + email)
                 self.send_json(201, {"invite_path": "/role-invite/" + token, "email": email, "role": wanted})
                 return
@@ -1229,7 +1271,7 @@ class PortalHandler(BaseHTTPRequestHandler):
                 rows = conn.execute("""SELECT u.id,u.name,u.email FROM users u JOIN event_roles er
                     ON er.user_id=u.id WHERE er.event_id=? AND er.role='judge' ORDER BY u.name""",
                     (event_id,)).fetchall()
-                self.send_json(200, {"judges": [dict(r) for r in rows]})
+                self.send_json(200, {"judges": [{**dict(r), "track_ids": judge_track_scope(conn, event_id, r["id"])} for r in rows]})
                 return
             if len(parts) == 4 and parts[3] == "assignments" and method == "POST":
                 self.must_role(conn, user, event_id, "organizer")
@@ -1244,6 +1286,8 @@ class PortalHandler(BaseHTTPRequestHandler):
                 require(project is not None, 404, "Submitted project not found")
                 require(role(conn, conn.execute("SELECT * FROM users WHERE id=?", (judge_id,)).fetchone(), event_id, "judge"),
                         422, "User is not a judge for this event")
+                require(judge_can_review(conn, judge_id, event_id, project["track_id"]),
+                        422, "Judge is not permitted to review this track")
                 require(not is_team_member(conn, conn.execute("SELECT * FROM users WHERE id=?", (judge_id,)).fetchone(),
                                            project["team_id"]), 409, "Judge conflicts with project team")
                 assignment_id = uid("asn")
@@ -1605,6 +1649,11 @@ class PortalHandler(BaseHTTPRequestHandler):
                     "Sign in with the invited email address")
             conn.execute("INSERT OR IGNORE INTO event_roles VALUES(?,?,?)",
                          (invitation["event_id"], user["id"], invitation["role"]))
+            scope = conn.execute("SELECT track_ids FROM role_invite_scopes WHERE token_hash=?",
+                                 (invitation["token_hash"],)).fetchone()
+            if invitation["role"] == "judge" and scope:
+                conn.execute("INSERT OR REPLACE INTO judge_track_scopes VALUES(?,?,?)",
+                             (invitation["event_id"], user["id"], scope[0]))
             conn.execute("UPDATE role_invites SET accepted_at=? WHERE token_hash=?",
                          (iso(), invitation["token_hash"]))
             audit(conn, "role_invite_accept", user["id"], invitation["event_id"], detail=invitation["role"])
@@ -1619,13 +1668,15 @@ class PortalHandler(BaseHTTPRequestHandler):
                 raise ApiError(403, "Judge scores are private")
             require(conn.execute("SELECT 1 FROM event_roles WHERE user_id=? AND role='judge'", (judge_id,)).fetchone() is not None,
                     403, "Judge role required")
-            rows = conn.execute("""SELECT a.id assignment_id,a.event_id,a.project_id,p.title project_title,
+            rows = conn.execute("""SELECT a.id assignment_id,a.event_id,a.project_id,p.title project_title,p.track_id,
                 r.id review_id,r.status review_status,r.comment,r.submitted_at
                 FROM assignments a JOIN projects p ON p.id=a.project_id
                 LEFT JOIN reviews r ON r.assignment_id=a.id WHERE a.judge_user_id=?
                 ORDER BY a.event_id,p.title""", (judge_id,)).fetchall()
             output = []
             for row in rows:
+                if not judge_can_review(conn, judge_id, row["event_id"], row["track_id"]):
+                    continue
                 item = dict(row)
                 review_rubric = conn.execute("SELECT rubric_id FROM reviews WHERE id=?",
                                              (row["review_id"],)).fetchone() if row["review_id"] else None
@@ -1768,6 +1819,9 @@ class PortalHandler(BaseHTTPRequestHandler):
             require(assignment["judge_user_id"] == user["id"], 403,
                     "Review belongs to another judge")
             require(role(conn, user, assignment["event_id"], "judge"), 403, "Judge role required")
+            project = conn.execute("SELECT track_id FROM projects WHERE id=?", (assignment["project_id"],)).fetchone()
+            require(judge_can_review(conn, user["id"], assignment["event_id"], project["track_id"]),
+                    403, "This track is outside your judge permissions")
             event = event_row(conn, assignment["event_id"])
             require(event["published_at"] is None, 409, "Published results cannot change")
             if event["judging_close"]:

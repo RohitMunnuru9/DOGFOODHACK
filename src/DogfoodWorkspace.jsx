@@ -26,6 +26,20 @@ async function request(path, method = 'GET', body) {
   return data;
 }
 
+const roleFormValues = form => {
+  const data = new FormData(form);
+  const tracks = data.getAll('track_ids').filter(Boolean);
+  return {...Object.fromEntries(data), track_ids: tracks.length ? tracks : null};
+};
+
+function JudgeTracks({tracks}) {
+  return <label className="grid gap-1 text-xs font-bold text-gray-500">Judge tracks (none selected means all)
+    <select multiple name="track_ids" className={input} aria-label="Judge tracks">
+      {tracks?.map(track => <option key={track.id} value={track.id}>{track.name}</option>)}
+    </select>
+  </label>;
+}
+
 function Field({label, children}) {
   return <label className="block space-y-1.5 text-xs font-bold uppercase tracking-wide text-gray-500"><span>{label}</span>{children}</label>;
 }
@@ -385,11 +399,13 @@ function DogfoodContent({role}) {
       </div>
       <div className="grid gap-5 lg:grid-cols-2">
         <section className={panel}><h3 className="text-lg font-black">Judge invitations</h3><p className="mb-4 text-sm text-gray-500">Create an email-specific link for a judge or participant.</p>
-          <form className="flex flex-wrap gap-2" onSubmit={e=>{e.preventDefault();const v=Object.fromEntries(new FormData(e.currentTarget));run(async()=>{const invite=await request(`/events/${eventId}/role-invites`,'POST',v);setInviteLink(`${window.location.origin}${invite.invite_path}`);});}}>
+          <form className="flex flex-wrap gap-2" onSubmit={e=>{e.preventDefault();const v=roleFormValues(e.currentTarget);run(async()=>{const invite=await request(`/events/${eventId}/role-invites`,'POST',v);setInviteLink(`${window.location.origin}${invite.invite_path}`);});}}>
+            <JudgeTracks tracks={detail?.tracks} />
             <input className={`${input} flex-1`} name="email" type="email" placeholder="Email address" required/><select className={`${input} w-auto`} name="role"><option>judge</option><option>participant</option><option>organizer</option></select><button className={button} disabled={busy}>Invite</button></form>
           {inviteLink && <p className="mt-3 break-all rounded-xl bg-indigo-50 p-3 text-xs font-bold text-indigo-700">{inviteLink}</p>}
           <h4 className="mt-6 font-bold">Add an existing account</h4><p className="mb-3 text-xs text-gray-500">Grant a role to an account already registered in this portal.</p>
-          <form className="flex flex-wrap gap-2" onSubmit={e=>{e.preventDefault();const v=Object.fromEntries(new FormData(e.currentTarget));run(()=>request(`/events/${eventId}/roles`,'POST',v));}}>
+          <form className="flex flex-wrap gap-2" onSubmit={e=>{e.preventDefault();const v=roleFormValues(e.currentTarget);run(()=>request(`/events/${eventId}/roles`,'POST',v));}}>
+            <JudgeTracks tracks={detail?.tracks} />
             <input className={`${input} flex-1`} name="email" type="email" placeholder="Registered email" required/><select className={`${input} w-auto`} name="role"><option>judge</option><option>participant</option><option>organizer</option></select><button className={secondary} disabled={busy}>Add role</button></form>
           <h4 className="mt-6 font-bold">Assign a submitted project</h4><form className="mt-3 grid gap-2" onSubmit={e=>{e.preventDefault();run(()=>request(`/events/${eventId}/assignments`,'POST',Object.fromEntries(new FormData(e.currentTarget))));}}>
             <select className={input} name="project_id" required>{projects.filter(p=>p.status==='submitted'&&!p.duplicate_of).map(p=><option value={p.id} key={p.id}>{p.title}</option>)}</select>
