@@ -2594,6 +2594,7 @@
       ],
       "get": {
         "summary": "Complete event data archive without credentials (organizer)",
+        "description": "Returns a consistent archive snapshot. Export and import share a 50,000,000-byte limit and full archives support at most 10,000 rows per table. Export returns 413 rather than an unrestorable download when these limits are exceeded.",
         "responses": {
           "200": {
             "description": "JSON download",
@@ -2627,6 +2628,7 @@
       ],
       "post": {
         "summary": "Restore a complete archive into a new empty event, or import partial teams/projects",
+        "description": "Accepts archive JSON up to 50,000,000 bytes; ordinary JSON endpoints remain limited to 1,000,000 bytes. Full archives support at most 10,000 rows per table. Bodies exceeding the byte limit return 413 before being read.",
         "requestBody": {
           "required": true,
           "content": {

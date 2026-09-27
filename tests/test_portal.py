@@ -363,6 +363,49 @@ class PortalTests(unittest.TestCase):
         self.assertEqual(len(roundtrip["votes"]), len(public_archive["votes"]))
         self.assertEqual([c["body"] for c in roundtrip["comments"]], [c["body"] for c in public_archive["comments"]])
 
+    def test_large_archive_roundtrip_and_matching_export_limits(self):
+        org = "dogfood-organizer-2026"
+        event = self.new_event(["Open"])
+        for batch in range(2):
+            payload = {
+                "teams": [{"name": f"Large team {batch}-{i}"} for i in range(75)],
+                "projects": [{"team": f"Large team {batch}-{i}", "track": "Open",
+                              "title": f"Large project {batch}-{i}", "description": "x"*8000}
+                             for i in range(75)]}
+            self.assertEqual(self.request("POST", f"/api/events/{event}/import.json", payload, org)[0], 201)
+        status, archive, _ = self.request("GET", f"/api/events/{event}/export.json", token=org)
+        self.assertEqual(status, 200)
+        self.assertGreater(len(json.dumps(archive).encode()), portal.MAX_JSON_BYTES)
+        target = self.new_event()
+        status, restored, _ = self.request("POST", f"/api/events/{target}/import.json", archive, org)
+        self.assertEqual(status, 201, restored)
+        self.assertEqual(restored["projects_created"], 150)
+        exported = self.request("GET", f"/api/events/{target}/export.json", token=org)[1]
+        self.assertEqual(sorted(p["title"] for p in exported["projects"]), sorted(p["title"] for p in archive["projects"]))
+        self.assertEqual([p["description"] for p in exported["project_details"]], ["x"*8000]*150)
+        with patch.object(portal, "MAX_ARCHIVE_BYTES", 1000):
+            status, error, headers = self.request("GET", f"/api/events/{event}/export.json", token=org)
+            self.assertEqual(status, 413)
+            self.assertIn("restore limit", error["error"])
+            self.assertNotIn("Content-Disposition", headers)
+        with patch.object(portal, "MAX_ARCHIVE_ROWS", 100):
+            self.assertEqual(self.request("GET", f"/api/events/{event}/export.json", token=org)[0], 413)
+        # Reject over-limit bodies from their headers, before buffering their contents.
+        for path, limit in ((f"/api/events/{target}/import.json", portal.MAX_ARCHIVE_BYTES),
+                            (f"/dogfood-api/events/{target}/import.json", portal.MAX_ARCHIVE_BYTES),
+                            ("/api/events", portal.MAX_JSON_BYTES)):
+            connection = HTTPConnection("127.0.0.1", self.server.server_port, timeout=10)
+            try:
+                connection.putrequest("POST", path)
+                connection.putheader("Authorization", "Bearer " + org)
+                connection.putheader("Content-Length", str(limit+1))
+                connection.endheaders()
+                response = connection.getresponse()
+                self.assertEqual(response.status, 413)
+                self.assertIn(str(limit), json.loads(response.read())["error"])
+            finally:
+                connection.close()
+
     def test_voting_policy_requires_email_bound_single_use_invitation(self):
         org, participant = "dogfood-organizer-2026", "dogfood-participant-2026"
         event = self.new_event()

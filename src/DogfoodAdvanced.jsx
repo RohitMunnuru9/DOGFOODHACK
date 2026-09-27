@@ -73,6 +73,7 @@ export default function DogfoodAdvanced({event, role, request, onImported}) {
         <section className={panel}>
           <h3 className="text-lg font-black">Move your data</h3>
           <p className="mt-1 text-sm text-gray-500">Restore a full archive into a new empty event, including judging, votes, comments and published results. New historical accounts stay locked until you send their owners an event invitation. Credentials and webhook secrets are never imported.</p>
+          <p className="mt-1 text-xs text-gray-500">Archive limit: 50 MB and 10,000 rows per table.</p>
           <div className="mt-4 flex flex-wrap gap-2"><a className={button} href={`/dogfood-api/events/${eventId}/export.json`}>Export event JSON ↓</a><a className={secondary} href={`/dogfood-api/events/${eventId}/export.csv`}>Results CSV ↓</a></div>
           <form className="mt-5 space-y-3" onSubmit={event => { event.preventDefault(); if (!file) return; act(async () => {
             const payload = JSON.parse(await file.text());

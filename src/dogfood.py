@@ -32,6 +32,9 @@ PORT = int(os.environ.get("PORT", "8080"))
 HOST = os.environ.get("HOST", "0.0.0.0")
 UTC = timezone.utc
 DEMO_PASSWORD = "dogfood-demo-2026"
+MAX_JSON_BYTES = 1_000_000
+MAX_ARCHIVE_BYTES = 50_000_000
+MAX_ARCHIVE_ROWS = 10_000
 DEMO_TOKENS = {
     "organizer": ("organizer@demo.local", "dogfood-organizer-2026"),
     "judge_a": ("marek.nowak@example.org", "dogfood-judge-a-2026"),
@@ -788,7 +791,7 @@ def restore_archive(conn, event_id, archive, actor):
               "reviews", "criterion_scores", "votes", "comments", "result_snapshots", "audit_events"]
     for table in ["users", *tables]:
         rows = archive.get(table, [])
-        require(isinstance(rows, list) and len(rows) <= 10000 and all(isinstance(r, dict) for r in rows),
+        require(isinstance(rows, list) and len(rows) <= MAX_ARCHIVE_ROWS and all(isinstance(r, dict) for r in rows),
                 422, "Invalid archive table: " + table)
     mappings = {table: {str(row["id"]): uid("import") for row in archive.get(table, [])}
                 for table in ["tracks", "prizes", "teams", "projects", "rubrics", "criteria", "assignments", "reviews", "votes", "comments"]}
@@ -1002,7 +1005,10 @@ class PortalHandler(BaseHTTPRequestHandler):
         if self._request_body is not None:
             return self._request_body
         size = int(self.headers.get("Content-Length", "0"))
-        require(0 <= size <= 1_000_000, 413, "Request body too large")
+        archive_upload = self.command == "POST" and re.fullmatch(
+            r"/(?:api|dogfood-api)/events/[^/]+/import\.json/?", urlsplit(self.path).path)
+        limit = MAX_ARCHIVE_BYTES if archive_upload else MAX_JSON_BYTES
+        require(0 <= size <= limit, 413, f"Request body too large (maximum {limit} bytes)")
         try:
             body = json.loads(self.rfile.read(size) or b"{}")
         except json.JSONDecodeError:
@@ -1057,6 +1063,8 @@ class PortalHandler(BaseHTTPRequestHandler):
             with db() as conn:
                 if writing:
                     begin_write(conn)
+                elif method == "GET" and path.endswith("/export.json"):
+                    conn.execute("BEGIN")  # One consistent snapshot for every archive table.
                 user = self.current_user(conn)
                 if path.startswith("/api/") or path == "/api":
                     self.api(conn, user, method, path, query)
@@ -1765,7 +1773,15 @@ class PortalHandler(BaseHTTPRequestHandler):
                     SELECT c.user_id FROM comments c JOIN projects p ON p.id=c.project_id WHERE p.event_id=? UNION
                     SELECT user_id FROM voter_access WHERE event_id=?) ORDER BY u.id""",
                     (event_id, event_id, event_id, event_id, event_id, event_id)).fetchall()]
-                self.send_bytes(200, json.dumps(archive, ensure_ascii=False, default=str).encode("utf-8"),
+                # Do not offer a download that exceeds the restore contract.
+                for table, rows in archive.items():
+                    if isinstance(rows, list):
+                        require(len(rows) <= MAX_ARCHIVE_ROWS, 413,
+                                f"Archive exceeds {MAX_ARCHIVE_ROWS} rows in {table}")
+                encoded = json.dumps(archive, ensure_ascii=False, default=str).encode("utf-8")
+                require(len(encoded) <= MAX_ARCHIVE_BYTES, 413,
+                        f"Archive exceeds the {MAX_ARCHIVE_BYTES}-byte restore limit")
+                self.send_bytes(200, encoded,
                                 "application/json; charset=utf-8",
                                 {"Content-Disposition": "attachment; filename=dogfood-event.json"})
                 return

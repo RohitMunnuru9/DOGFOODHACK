@@ -26,6 +26,8 @@ Set `/api/events/{event_id}/voting-policy` to `{"mode":"authenticated"}` or `{"m
 
 ## Archives
 
+Archive uploads and downloads share a 50,000,000-byte limit; ordinary JSON requests remain limited to 1,000,000 bytes. Full archives support up to 10,000 rows per table. Export returns a JSON error (413) instead of an unrestorable file if either archive limit is exceeded. Restore the downloaded file unchanged to a new empty event.
+
 Export `/api/events/{event_id}/export.json`. Restore that complete `dogfood-event-v1` object with `POST /api/events/{empty_event_id}/import.json`. Create an empty event first. Restoration is atomic; IDs are remapped, duplicate links and review/rubric relationships preserved, and a nonempty destination is rejected. Existing accounts match by email. New historical identities are locked; issue a role invitation from the restored event so the matching owner can register with that token and set a password. Credentials, sessions and webhook secrets never transfer. Published records are reissued under the destination key; original records are retained as provenance. A partial `teams`/`projects` import is also supported; it does not restore judging history.
 
 ## Webhooks and records
