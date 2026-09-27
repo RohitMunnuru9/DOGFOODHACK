@@ -56,6 +56,8 @@ To test a newly downloaded fixture instead, set `DOGFOOD_FIXTURES` to that file 
 
 ## Remaining deployment verification
 
-Docker Desktop's Linux engine was unavailable: `docker info` failed because `dockerDesktopLinuxEngine` could not be found. Consequently, this run does **not** certify the current Docker images or offline Compose startup. Earlier Docker receipts apply to the revision described in TESTING.md; the current revision still needs the documented Compose and isolated-network checks once Docker is running.
+**Resolved in the subsequent [Docker verification](docker-verification-2026-09-28.md).** The paragraph below records the limitation at the time of this native test run.
+
+Docker Desktop's Linux engine was unavailable: `docker info` failed because `dockerDesktopLinuxEngine` could not be found. Consequently, this native run did **not** certify Docker images or offline Compose startup. The subsequent Docker pass rebuilt the application and completed the Compose and isolated-network checks.
 
 The published host checker verifies seven specific T1/T2 behaviors. These passing results and the broader regressions are evidence for the tested behavior, not a guarantee of every possible input or deployment, and do not certify T3/T4.
