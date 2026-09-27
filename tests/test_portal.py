@@ -18,6 +18,7 @@ from concurrent.futures import ThreadPoolExecutor
 from unittest.mock import patch
 from pathlib import Path
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from http.client import HTTPConnection
 from urllib.error import HTTPError
 from urllib.parse import quote
 from urllib.request import Request, urlopen
@@ -104,6 +105,64 @@ class PortalTests(unittest.TestCase):
 
         with patch.object(portal.sqlite3, "connect", connect), ThreadPoolExecutor(max_workers=len(calls)) as pool:
             return list(pool.map(run, calls))
+
+    def delayed_body_request(self, method, path, payload, token, while_waiting):
+        reached = threading.Event()
+        original = portal.PortalHandler.body_json
+
+        def observed(handler):
+            if handler.headers.get("X-Test-Delayed-Body"):
+                reached.set()
+            return original(handler)
+
+        body = json.dumps(payload).encode()
+        slow = HTTPConnection("127.0.0.1", self.server.server_port, timeout=10)
+        try:
+            with patch.object(portal.PortalHandler, "body_json", observed):
+                slow.putrequest(method, path)
+                for key, value in {"Authorization": "Bearer " + token, "Content-Type": "application/json",
+                                   "Content-Length": str(len(body)), "X-Test-Delayed-Body": "1"}.items():
+                    slow.putheader(key, value)
+                slow.endheaders()
+                self.assertTrue(reached.wait(5), "Request did not reach body reader")
+                while_waiting()
+                slow.send(body)
+                response = slow.getresponse()
+                return response.status, json.loads(response.read())
+        finally:
+            slow.close()
+
+    def test_inflight_submission_edits_and_reviews_cannot_cross_publication(self):
+        org, participant, judge = "dogfood-organizer-2026", "dogfood-participant-2026", "dogfood-judge-a-2026"
+        for operation in ("create", "edit", "review"):
+            with self.subTest(operation=operation):
+                event = self.new_event()
+                track = self.request("GET", f"/api/events/{event}")[1]["tracks"][0]["id"]
+                team = self.request("POST", f"/api/events/{event}/teams", {"name": "Deadline team"}, participant)[1]["id"]
+                payload = {"team_id": team, "track_id": track, "title": "Original", "submit": True}
+                project = self.request("POST", f"/api/events/{event}/projects", payload, participant)[1]["id"]
+                method, path, token = "POST", f"/api/events/{event}/projects", participant
+                if operation == "edit":
+                    method, path, payload = "PATCH", f"/api/projects/{project}", {"title": "Too late"}
+                if operation == "review":
+                    self.assertEqual(self.request("POST", f"/api/events/{event}/roles", {
+                        "email": "marek.nowak@example.org", "role": "judge"}, org)[0], 200)
+                    assignment = self.request("POST", f"/api/events/{event}/assignments", {
+                        "project_id": project, "judge_user_id": "judge_jdg_08"}, org)[1]["id"]
+                    method, path, token = "PUT", f"/api/assignments/{assignment}/review", judge
+                    payload = {"scores": {"functionality": 5, "quality": 5, "innovation": 5}, "submit": True}
+
+                def close_and_publish():
+                    self.assertEqual(self.request("PATCH", f"/api/events/{event}", {
+                        "submissions_close": portal.iso(portal.now()-timedelta(seconds=2))}, org)[0], 200)
+                    self.assertEqual(self.request("POST", f"/api/events/{event}/publish", {}, org)[0], 200)
+
+                self.assertEqual(self.delayed_body_request(method, path, payload, token, close_and_publish)[0], 409)
+                projects = self.request("GET", f"/api/events/{event}/projects")[1]["projects"]
+                results = self.request("GET", f"/api/events/{event}/results")[1]["results"]
+                self.assertEqual([p["title"] for p in projects], ["Original"])
+                self.assertEqual(len(results), 1)
+                self.assertEqual(results[0]["review_count"], 0)
 
     def test_concurrent_team_creation_and_invite_acceptance(self):
         participant = "dogfood-participant-2026"

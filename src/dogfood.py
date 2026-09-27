@@ -90,6 +90,12 @@ def db():
         conn.close()
 
 
+def begin_write(conn: sqlite3.Connection) -> None:
+    """Serialize state checks with writes; reuse an existing request transaction."""
+    if not conn.in_transaction:
+        conn.execute("BEGIN IMMEDIATE")
+
+
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS users (
  id TEXT PRIMARY KEY, email TEXT NOT NULL UNIQUE, name TEXT NOT NULL,
@@ -769,7 +775,7 @@ def restore_archive(conn, event_id, archive, actor):
     identities are locked until an organizer-issued invitation activates them.
     Secrets are never imported, and certificates are signed anew at destination.
     """
-    conn.execute("BEGIN IMMEDIATE")
+    begin_write(conn)
     source = archive.get("event")
     require(isinstance(source, dict), 422, "Archive event is required")
     require(not conn.execute("SELECT 1 FROM teams WHERE event_id=?", (event_id,)).fetchone() and
@@ -991,8 +997,10 @@ class PortalHandler(BaseHTTPRequestHandler):
                         "application/json; charset=utf-8", headers)
 
     def body_json(self) -> dict:
+        if self._request_body is not None:
+            return self._request_body
         size = int(self.headers.get("Content-Length", "0"))
-        require(size <= 1_000_000, 413, "Request body too large")
+        require(0 <= size <= 1_000_000, 413, "Request body too large")
         try:
             body = json.loads(self.rfile.read(size) or b"{}")
         except json.JSONDecodeError:
@@ -1029,6 +1037,7 @@ class PortalHandler(BaseHTTPRequestHandler):
         return user
 
     def handle_request(self, method: str) -> None:
+        self._request_body = None
         parsed = urlsplit(self.path)
         path = parsed.path.rstrip("/") or "/"
         if path.startswith("/dogfood-api/"):
@@ -1039,7 +1048,13 @@ class PortalHandler(BaseHTTPRequestHandler):
                 origin = self.headers.get("Origin")
                 host = self.headers.get("Host", "")
                 require(not origin or urlsplit(origin).netloc == host, 403, "Cross-origin write refused")
+            writing = method in ("POST", "PUT", "PATCH", "DELETE") and path.startswith("/api/")
+            if writing:
+                # Never hold the write lock or trust event state while awaiting network input.
+                self._request_body = self.body_json()
             with db() as conn:
+                if writing:
+                    begin_write(conn)
                 user = self.current_user(conn)
                 if path.startswith("/api/") or path == "/api":
                     self.api(conn, user, method, path, query)
@@ -1339,7 +1354,7 @@ class PortalHandler(BaseHTTPRequestHandler):
                 return
             if len(parts) == 4 and parts[3] == "voting-policy" and method == "PUT":
                 self.must_role(conn, user, event_id, "organizer")
-                conn.execute("BEGIN IMMEDIATE")
+                begin_write(conn)
                 event = event_row(conn, event_id)
                 require(not event["published_at"] and not conn.execute("SELECT 1 FROM votes WHERE event_id=?", (event_id,)).fetchone(),
                         409, "Voting access is locked after the first vote")
@@ -1446,7 +1461,7 @@ class PortalHandler(BaseHTTPRequestHandler):
                 body = self.body_json()
                 name = clean(body.get("name", ""), 100)
                 require(name, 422, "Team name required")
-                conn.execute("BEGIN IMMEDIATE")
+                begin_write(conn)
                 require_submission_open(event_row(conn, event_id))
                 already = conn.execute("""SELECT 1 FROM team_members tm JOIN teams t ON t.id=tm.team_id
                     WHERE t.event_id=? AND tm.user_id=?""", (event_id, user["id"])).fetchone()
@@ -1571,7 +1586,7 @@ class PortalHandler(BaseHTTPRequestHandler):
                         409, "Judging deadline has passed")
                 target = self.body_json().get("reviews_per_project", 3)
                 require(type(target) is int and 1 <= target <= 10, 422, "Choose one to ten reviews per project")
-                conn.execute("BEGIN IMMEDIATE")
+                begin_write(conn)
                 judges = conn.execute("""SELECT u.* FROM users u JOIN event_roles er ON er.user_id=u.id
                     WHERE er.event_id=? AND er.role='judge' ORDER BY u.id""", (event_id,)).fetchall()
                 workloads = {j["id"]: conn.execute("SELECT COUNT(*) FROM assignments WHERE event_id=? AND judge_user_id=?",
@@ -1950,7 +1965,7 @@ class PortalHandler(BaseHTTPRequestHandler):
                      method: str, parts: list[str], query: dict) -> None:
         if len(parts) == 4 and parts[:2] == ["api", "voter-invites"] and parts[3] == "accept" and method == "POST":
             self.must_user(user)
-            conn.execute("BEGIN IMMEDIATE")
+            begin_write(conn)
             invite = conn.execute("SELECT * FROM voter_invites WHERE token_hash=?", (token_hash(parts[2]),)).fetchone()
             require(invite is not None and not invite["accepted_at"] and parse_time(invite["expires_at"]) > now(),
                     404, "Voter invitation is invalid, expired, or already used")
@@ -2028,7 +2043,7 @@ class PortalHandler(BaseHTTPRequestHandler):
             return
         if len(parts) == 4 and parts[:2] == ["api", "invites"] and parts[3] == "accept" and method == "POST":
             self.must_user(user)
-            conn.execute("BEGIN IMMEDIATE")
+            begin_write(conn)
             invitation = conn.execute("""SELECT i.*,t.event_id FROM team_invites i
                 JOIN teams t ON t.id=i.team_id WHERE i.token_hash=?""", (token_hash(parts[2]),)).fetchone()
             require(invitation is not None and not invitation["revoked"] and
@@ -2108,7 +2123,7 @@ class PortalHandler(BaseHTTPRequestHandler):
                     self.must_user(user)
                     body = clean(self.body_json().get("body", ""), 1000)
                     require(2 <= len(body), 422, "Comment is too short")
-                    conn.execute("BEGIN IMMEDIATE")  # Serialize duplicate and rate checks with insert.
+                    begin_write(conn)  # Serialize duplicate and rate checks with insert.
                     normalized = re.sub(r"\s+", " ", body).casefold()
                     previous = conn.execute("""SELECT body FROM comments
                         WHERE project_id=? AND user_id=? AND status='visible'""",
@@ -2202,7 +2217,7 @@ class PortalHandler(BaseHTTPRequestHandler):
         if len(parts) == 4 and parts[:2] == ["api", "events"] and parts[3] == "votes" and method == "POST":
             event = event_row(conn, parts[2])
             self.must_user(user)
-            conn.execute("BEGIN IMMEDIATE")  # Serialize eligibility, policy, and duplicate checks.
+            begin_write(conn)  # Serialize eligibility, policy, and duplicate checks.
             event = event_row(conn, parts[2])
             require_voter_access(conn, event["id"], user)
             require(event["status"] == "voting" and
