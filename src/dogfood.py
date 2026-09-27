@@ -634,6 +634,24 @@ def validate_project_answers(conn, project_id):
     require(not missing, 422, "Required answers missing: " + ", ".join(missing))
 
 
+def project_story_html(conn, project):
+    details = project_payload(conn, project)
+    escape = lambda value: html.escape(str(value), quote=True)
+    links = " ".join("<a target='_blank' rel='noopener noreferrer' href='" + escape(details[key]) + "'>" + label + " ↗</a>"
+                     for key, label in (("repo_url", "Repository"), ("demo_url", "Demo video"), ("live_url", "Live project"))
+                     if details.get(key) and urlsplit(str(details[key])).scheme in {"http", "https"})
+    images = [details["thumbnail_url"], *details["image_urls"]]
+    media = "".join("<img loading='lazy' style='max-width:100%;border-radius:16px' alt='Project image' src='" + escape(url) + "'>"
+                    for url in images if url and urlsplit(str(url)).scheme in {"http", "https"})
+    answers = "".join("<dt><strong>" + escape(q["label"]) + "</strong></dt><dd style='white-space:pre-wrap'>" +
+                      escape(details["custom_answers"].get(q["code"], "")) + "</dd>"
+                      for q in conn.execute("SELECT * FROM event_questions WHERE event_id=? ORDER BY position", (project["event_id"],)))
+    return ("<section class='panel'><h2>" + escape(details["tagline"] or "About this project") +
+            "</h2><p style='white-space:pre-wrap'>" + escape(details["description"]) + "</p><p>" + links +
+            "</p><p>" + escape(" · ".join(details["tech_tags"])) + "</p><div class='project-grid'>" + media +
+            "</div><dl>" + answers + "</dl></section>")
+
+
 def csv_safe(value: object) -> str:
     result = "" if value is None else str(value)
     return "'" + result if result.lstrip().startswith(("=", "+", "-", "@", "\t", "\r")) else result
@@ -794,14 +812,18 @@ def restore_archive(conn, event_id, archive, actor):
                 row["duplicate_of"] = mapped("projects", row["duplicate_of"]) if row.get("duplicate_of") else None
                 row["source_fixture_id"] = "archive:" + event_id + ":" + str(original["id"]) if row["duplicate_of"] else None
                 require(row.get("status") in ("draft", "submitted"), 422, "Invalid project status")
+                row["repo_url"] = repo_url(row.get("repo_url", ""))
             if table == "event_roles":
                 require(row.get("role") in ("participant", "judge", "organizer"), 422, "Invalid archived role")
             names = list(row)
             verb = "INSERT OR IGNORE" if table == "event_roles" else "INSERT"
             conn.execute(verb + " INTO " + table + "(" + ",".join(names) + ") VALUES(" + ",".join("?" for _ in names) + ")",
                          [row[k] for k in names])
-    for project in conn.execute("SELECT id FROM projects WHERE event_id=? AND status='submitted'", (event_id,)):
-        validate_project_answers(conn, project["id"])
+    for project in conn.execute("SELECT * FROM projects WHERE event_id=?", (event_id,)):
+        if conn.execute("SELECT 1 FROM project_details WHERE project_id=?", (project["id"],)).fetchone():
+            save_project_details(conn, project["id"], project_payload(conn, project))
+        if project["status"] == "submitted":
+            validate_project_answers(conn, project["id"])
     require(source.get("status") in ("draft", "open", "judging", "voting", "published"), 422, "Invalid event status")
     require(bool(source.get("published_at")) == (source["status"] == "published"), 422, "Inconsistent publication state")
     dates = {key: iso(parse_time(source[key])) if source.get(key) else None
@@ -1086,7 +1108,7 @@ class PortalHandler(BaseHTTPRequestHandler):
                             "</span><h2>" + html.escape(p["title"]) + "</h2><p>" + html.escape(p["summary"]) +
                             "</p><a href='" + html.escape(p["repo_url"] or "#", quote=True) +
                             "' rel='noopener noreferrer'>View repository ↗</a> · <a href='/projects/" +
-                            html.escape(p["id"], quote=True) + "'>Read comments</a>" +
+                            html.escape(p["id"], quote=True) + "'>Read full submission</a>" +
                             ("<span class='flag'>Duplicate under review</span>" if p["duplicate_of"] else "") +
                             "</article>" for p in projects)
             options = "".join("<option value='" + html.escape(t["id"], quote=True) + "'" +
@@ -1109,7 +1131,7 @@ class PortalHandler(BaseHTTPRequestHandler):
                 (project_id,)).fetchall()
             entries = "".join("<article class='project-card'><strong>" + html.escape(c["author"]) +
                               "</strong><p>" + html.escape(c["body"]) + "</p></article>" for c in comments)
-            markup = """<!doctype html><html lang='en'><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>""" + html.escape(project["title"]) + """ · DOGFOOD</title><link rel='stylesheet' href='/assets/site.css'><body><header class='topbar'><a class='brand' href='/'>DOGFOOD<span> / PORTAL</span></a><nav><a href='/'>Dashboard</a><a href='/events/""" + html.escape(project["event_id"], quote=True) + """/projects'>Gallery</a></nav></header><main class='gallery'><div class='gallery-head'><span class='eyebrow'>""" + html.escape(project["track_name"] or "General") + """</span><h1>""" + html.escape(project["title"]) + """</h1><p>""" + html.escape(project["summary"]) + """</p></div><h2>Community comments</h2><div class='project-grid'>""" + (entries or "<p>No comments yet.</p>") + """</div><p>Open the portal to sign in and add a comment.</p></main></body></html>"""
+            markup = """<!doctype html><html lang='en'><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>""" + html.escape(project["title"]) + """ · DOGFOOD</title><link rel='stylesheet' href='/assets/site.css'><body><header class='topbar'><a class='brand' href='/'>DOGFOOD<span> / PORTAL</span></a><nav><a href='/'>Dashboard</a><a href='/events/""" + html.escape(project["event_id"], quote=True) + """/projects'>Gallery</a></nav></header><main class='gallery'><div class='gallery-head'><span class='eyebrow'>""" + html.escape(project["track_name"] or "General") + """</span><h1>""" + html.escape(project["title"]) + """</h1><p>""" + html.escape(project["summary"]) + """</p></div>""" + project_story_html(conn, project) + """<h2>Community comments</h2><div class='project-grid'>""" + (entries or "<p>No comments yet.</p>") + """</div><p>Open the portal to sign in and add a comment.</p></main></body></html>"""
             self.send_bytes(200, markup.encode("utf-8"), "text/html; charset=utf-8")
             return
         if path == "/":

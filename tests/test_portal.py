@@ -162,6 +162,14 @@ class PortalTests(unittest.TestCase):
         self.assertEqual(self.request("POST", project_path+"/submit", {}, participant)[0], 200)
         self.assertEqual(self.request("PATCH", project_path, {"custom_answers": {}}, participant)[0], 422)
         self.assertEqual(self.request("GET", project_path)[1]["project"]["custom_answers"]["problem"], "A real problem")
+        self.assertEqual(self.request("PATCH", project_path, {"description": "<script>alert('unsafe')</script>",
+            "demo_url": "https://example.org/video", "tech_tags": ["SQLite"]}, participant)[0], 200)
+        page = self.request("GET", project_path.replace("/api/", "/"))[1]
+        self.assertIn("A real problem", page)
+        self.assertIn("https://example.org/video", page)
+        self.assertIn("SQLite", page)
+        self.assertIn("&lt;script&gt;", page)
+        self.assertNotIn("<script>alert", page)
         self.assertEqual(self.request("PUT", path, {"questions": []}, org)[0], 409)
 
     def test_full_archive_restores_fixture_history_and_locked_identities(self):

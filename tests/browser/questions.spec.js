@@ -28,4 +28,7 @@ test('organizer questions reach the participant form and gate submission', async
   const projects = await (await page.request.get(`/dogfood-api/events/${event.id}/projects`)).json();
   expect(projects.projects[0].status).toBe('submitted');
   expect(Object.values(projects.projects[0].custom_answers)).toEqual(['Helping organizers run events.']);
+  await page.goto(`/projects/${projects.projects[0].id}`);
+  await expect(page.getByText('What problem do you solve?', {exact:true})).toBeVisible();
+  await expect(page.getByText('Helping organizers run events.', {exact:true})).toBeVisible();
 });
