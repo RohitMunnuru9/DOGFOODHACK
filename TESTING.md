@@ -1,6 +1,6 @@
 # Verification
 
-Latest result: the [28 September Docker verification](docs/docker-verification-2026-09-28.md) passed on the current packaged app, including 25 browser tests, 21 containerized API tests, both normal and offline 7/7 host checks, full fixture comparisons, local media delivery and restart persistence. This resolves the Docker availability limitation recorded in the earlier native UI checks below.
+Latest result: the [28 September Docker verification](docs/docker-verification-2026-09-28.md) passed on the current packaged app, including 25 browser tests, 21 containerized API tests, both normal and offline 7/7 host checks, full fixture comparisons, local media delivery and restart persistence. This resolves the Docker availability limitation recorded in the earlier native UI checks below. The submission now claims T1–T4; the published checker has probes only for T1/T2, and [TIER-EVIDENCE.md](TIER-EVIDENCE.md) lists the separate T3/T4 evidence and limits.
 
 The published host checker is unchanged. Run it directly with `python run.py .dogfood.toml`. It prints failures but does not reliably signal them through its exit status. `python scripts/check_acceptance.py` preserves its output and additionally exits nonzero unless all seven checks pass. An alternate port is supported with `--base-url http://localhost:18000`; the actual origin remains visible in the report.
 

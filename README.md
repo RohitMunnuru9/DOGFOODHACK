@@ -68,7 +68,7 @@ python scripts/normalization_report.py --check
 npm run build
 ```
 
-The checked-in [`acceptance-report.txt`](acceptance-report.txt) shows **7/7 PASS** for the published T1/T2 checks. `.dogfood.toml` claims T1 and T2. The Python suite covers additional T1–T4 behavior, including role isolation, deadlines, judging, voting, records, archive import, and webhook signing. T3 and T4 do not have published acceptance probes, so their remaining limits are described here rather than included in the tier claim.
+The checked-in [`acceptance-report.txt`](acceptance-report.txt) shows **7/7 PASS** for the published T1/T2 checks. `.dogfood.toml` claims T1–T4. The host checker contains no T3/T4 probes, so its automatic `verified` line stops at T2 and marks T3/T4 unverified; that is a limit of the published checker, not evidence that those tiers passed or failed. [TIER-EVIDENCE.md](TIER-EVIDENCE.md) maps every T3/T4 requirement to the implementation and separate regression coverage. Judges should inspect those behaviors and the limits below when evaluating the higher tier claim.
 
 See [TESTING.md](TESTING.md) for Docker, offline-runtime, browser and persistence checks, and [DEMO.md](DEMO.md) for the updated product walkthrough and recording instructions.
 
@@ -78,6 +78,7 @@ See [TESTING.md](TESTING.md) for Docker, offline-runtime, browser and persistenc
 - [DATA-MODEL.md](DATA-MODEL.md) — schema, fixture import, and export
 - [JUDGING.md](JUDGING.md) — assignments, scoring, and normalization
 - [NORMALIZATION.md](NORMALIZATION.md) — arithmetic proof and reproducible fixture evidence
+- [TIER-EVIDENCE.md](TIER-EVIDENCE.md) — T3/T4 requirement map, checks, and limits
 - [THREAT-MODEL.md](THREAT-MODEL.md) — voting and review abuse controls
 - [KICKOFF-NOTES.md](KICKOFF-NOTES.md) — event rules and implementation map
 

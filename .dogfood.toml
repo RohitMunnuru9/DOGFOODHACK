@@ -2,8 +2,8 @@
 base_url = "http://localhost:8000"
 
 [tiers]
-claimed = ["T1", "T2"]
-pitch = "A local-first hackathon portal with project submissions, weighted judging, and transparent results."
+claimed = ["T1", "T2", "T3", "T4"]
+pitch = "A self-hosted hackathon portal for submissions, fair judging, community voting, and portable event records."
 
 [auth]
 organizer = "Authorization: Bearer dogfood-organizer-2026"
