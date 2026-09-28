@@ -15,13 +15,16 @@ The published `run.py` has seven probes for T1 and T2 and **none for T3 or T4**.
 | T4 embeddable gallery | Public `/embed/events/{id}` iframe page | `test_t4_archive_records_and_embeddable_gallery` |
 | T4 bulk data movement | JSON export and atomic full-event import restore roles, rubric, assignments, reviews, votes, comments, snapshots and relationships; CSV results export and partial import are also available | `test_full_archive_restores_fixture_history_and_locked_identities`; `test_large_archive_roundtrip_and_matching_export_limits` |
 
-The relevant API tests are in `tests/test_portal.py`; the recorded production Docker browser run and offline checks are described in `docs/docker-verification-2026-09-28.md`. Reproduce the API and host checks with:
+The relevant API tests are in `tests/test_portal.py`; the recorded production Docker browser run and offline checks are described in `docs/docker-verification-2026-09-28.md`. Reproduce the published host checks and the separately labeled upper-tier regressions with:
 
 ```bash
 python -m unittest discover -s tests -v
 python run.py .dogfood.toml
+python scripts/check_upper_tiers.py
 ```
 
-On 28 September, the API suite completed **21/21 tests**, the fixture comparison matched all 41 project rows and 126 reviews, and the unmodified host checker returned **7/7 PASS** through the running Next portal. That [portal receipt](docs/tier-claim-portal-acceptance-report.txt) records the T1–T4 claim and the checker’s T3/T4 limitation. Read-only requests through Next also returned 200 for the seeded ballot, organizer audit, full JSON archive, records list, embed and OpenAPI document. These checks do not replace an organizer's manual review of T3/T4.
+The supplementary script writes [tier-regression-report.txt](tier-regression-report.txt). It checks the T3/T4 workflows using an isolated temporary database and does not modify the organizer's `run.py` or claim that its seven published probes cover those tiers.
+
+On 28 September, the API suite completed **21/21 tests**, the supplementary T3/T4 run completed **2/2 and 4/4**, the Node storage/OpenAPI checks completed **3/3**, the fixture comparison matched all 41 project rows and 126 reviews, and an optimized Next build passed. The unmodified host checker returned **7/7 PASS** through the running Next portal. The [portal receipt](docs/tier-claim-portal-acceptance-report.txt) records the T1–T4 claim and the checker’s T3/T4 limitation. Read-only requests through Next also returned 200 for the seeded ballot, organizer audit, full JSON archive, records list, embed and OpenAPI document. These checks do not replace an organizer's manual review of T3/T4.
 
 The host checker can only confirm T1/T2 automatically. Voting is limited to one vote per account, not provably one per human. Invitation-only access depends on organizers sending links through a trusted channel; there is no automatic email verification. Records are publicly verifiable through the issuing server, not offline with a public key. Webhook delivery is synchronous, best-effort and retryable, without a background worker. The archive excludes passwords, sessions and webhook secrets by design; imported historical accounts require an organizer invitation to activate. See `THREAT-MODEL.md`, `ARCHITECTURE.md` and `API.md` for details.

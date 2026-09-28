@@ -1,0 +1,12 @@
+DOGFOOD supplementary T3/T4 regression report
+These are project tests, not checks in the published run.py.
+
+T3  test_voting_policy_requires_email_bound_single_use_invitation ... PASS
+T3  test_t3_ballot_comments_privacy_and_abuse_controls ... PASS
+T3  2/2 passed
+
+T4  test_t4_signed_webhook_delivery ... PASS
+T4  test_t4_archive_records_and_embeddable_gallery ... PASS
+T4  test_full_archive_restores_fixture_history_and_locked_identities ... PASS
+T4  test_large_archive_roundtrip_and_matching_export_limits ... PASS
+T4  4/4 passed
