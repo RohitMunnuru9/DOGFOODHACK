@@ -1304,7 +1304,12 @@ class PortalHandler(BaseHTTPRequestHandler):
                     401, "Invalid email or password")
             token = create_session(conn, account["id"])
             audit(conn, "login", account["id"])
-            self.send_json(200, {"id": account["id"], "name": account["name"]},
+            result = {"id": account["id"], "name": account["name"]}
+            if account["id"] == "demo_explorer" and quick_demo_credentials():
+                # Embedded local previews may reject cookies. Only this optional
+                # local demo account can use a tab-scoped bearer fallback.
+                result["demo_session"] = token
+            self.send_json(200, result,
                            {"Set-Cookie": "session=" + token + "; HttpOnly; SameSite=Strict; Path=/; Max-Age=604800"})
             return
         if path == "/api/logout" and method == "POST":

@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 const ArcadeDashboard = dynamic(() => import('./Arcade'), {ssr:false, loading:()=><ClaySkeleton label="Opening the arcade"/>});
 import {ClaySelect, ClayDateTime, ClayNumber, ClayProgress, ClaySkeleton, useClayMotion} from './ClayUI';
 import {motion, useReducedMotion} from 'framer-motion';
+import {getDemoSession, setDemoSession} from './demoSession';
 import {LayoutDashboard, FolderOpen, Users, ClipboardCheck, Trophy, MessageCircle, Settings, ArrowUpRight, Plus, Layers, ArrowRight, Gamepad2} from 'lucide-react';
 
 const root = '/dogfood-api';
@@ -23,9 +24,11 @@ const projectFormValues = form => {
 };
 
 async function request(path, method = 'GET', body) {
+  const token = getDemoSession();
   const response = await fetch(root + path, {
     method, credentials: 'same-origin',
-    headers: body === undefined ? {} : {'Content-Type': 'application/json'},
+    headers: {...(body === undefined ? {} : {'Content-Type': 'application/json'}),
+      ...(token ? {Authorization: `Bearer ${token}`} : {})},
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   const data = response.headers.get('Content-Type')?.includes('json') ? await response.json() : await response.text();
@@ -341,7 +344,7 @@ function DogfoodContent({role}) {
   if (!ready) return <div className="clay-boot"><ClaySkeleton/></div>;
   if (!me) return <div className={panel}><h2 className="text-xl font-black text-gray-800">Local event account</h2>
     <p className="mt-2 text-sm text-gray-500">Sign in with a local account to use the event workspace.</p>
-    <form className="mt-5 grid gap-3 sm:grid-cols-2" onSubmit={e => {e.preventDefault(); const values=Object.fromEntries(new FormData(e.currentTarget)); run(async()=>{await request('/login','POST',values);setMe((await request('/me')).user);await loadEvents();});}}>
+    <form className="mt-5 grid gap-3 sm:grid-cols-2" onSubmit={e => {e.preventDefault(); const values=Object.fromEntries(new FormData(e.currentTarget)); run(async()=>{setDemoSession('');const signedIn=await request('/login','POST',values);if(signedIn.demo_session)setDemoSession(signedIn.demo_session);setMe((await request('/me')).user);await loadEvents();});}}>
       <input className={input} name="email" type="email" placeholder="Email" required/><input className={input} name="password" type="password" placeholder="Password" required/><button className={button}>Sign in</button></form></div>;
 
   const tabs=[['overview','Overview',LayoutDashboard],['submissions','Submissions',FolderOpen],['teams','Teams',Users],['judging','Judging',ClipboardCheck],['results','Results',Trophy],['community','Community',MessageCircle],['arcade','Arcade',Gamepad2],...(role==='admin'?[['settings','Settings',Settings]]:[])];

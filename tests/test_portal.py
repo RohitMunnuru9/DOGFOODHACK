@@ -663,9 +663,10 @@ class PortalTests(unittest.TestCase):
 
     def test_local_preview_login_opens_all_three_workspaces(self):
         email, password = portal.quick_demo_credentials()
-        status, _, headers = self.request("POST", "/api/login", {
+        status, signed_in, headers = self.request("POST", "/api/login", {
             "email": email, "password": password})
         self.assertEqual(status, 200)
+        self.assertEqual(self.request("GET", "/api/me", token=signed_in["demo_session"])[1]["user"]["email"], email)
         cookie = headers["Set-Cookie"].split(";", 1)[0]
         identity = self.request("GET", "/api/me", cookie=cookie)[1]
         self.assertEqual(identity["user"]["email"], email)
@@ -681,6 +682,7 @@ class PortalTests(unittest.TestCase):
             self.assertEqual(self.request("POST", "/api/login", {
                 "email": email, "password": password})[0], 401)
             self.assertIsNone(self.request("GET", "/api/me", cookie=cookie)[1]["user"])
+            self.assertIsNone(self.request("GET", "/api/me", token=signed_in["demo_session"])[1]["user"])
 
     def test_t1_sessions_and_event_role_permissions(self):
         self.assertIsNone(self.request("GET", "/api/me")[1]["user"])
@@ -690,9 +692,10 @@ class PortalTests(unittest.TestCase):
         event_id = self.new_event()
         self.assertEqual(self.request("PATCH", f"/api/events/{event_id}", {"name": "Unauthorized"})[0], 401)
         self.assertEqual(self.request("PATCH", f"/api/events/{event_id}", {"name": "Unauthorized"}, cookie=cookie)[0], 403)
-        status, _, headers = self.request("POST", "/api/login", {
+        status, admin_login, headers = self.request("POST", "/api/login", {
             "email": "admin@demo.local", "password": portal.DEMO_PASSWORD})
         self.assertEqual(status, 200)
+        self.assertNotIn("demo_session", admin_login)
         admin_cookie = headers["Set-Cookie"].split(";", 1)[0]
         self.assertTrue(self.request("GET", f"/api/events/{event_id}", cookie=admin_cookie)[1]["can_manage"])
         self.assertEqual(self.request("PATCH", f"/api/events/{event_id}",

@@ -6,14 +6,17 @@ import LandingShowcase from './LandingShowcase';
 import {motion, MotionConfig} from 'framer-motion';
 import {ArrowUpRight, LogOut, Layers} from 'lucide-react';
 import {ClaySkeleton} from './ClayUI';
+import {getDemoSession, setDemoSession} from './demoSession';
 
 const field = 'dogfood-input';
 const button = 'dogfood-button';
 
 async function api(path, body) {
+  const token = getDemoSession();
   const response = await fetch(`/dogfood-api/${path}`, {
     method: body === undefined ? 'GET' : 'POST', credentials: 'same-origin',
-    headers: body === undefined ? {} : {'Content-Type': 'application/json'},
+    headers: {...(body === undefined ? {} : {'Content-Type': 'application/json'}),
+      ...(token ? {Authorization: `Bearer ${token}`} : {})},
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   const data = await response.json();
@@ -38,8 +41,11 @@ export default function PortalApp() {
   const authenticate = async (body, mode = register ? 'register' : 'login', preferredRole) => {
     setBusy(true); setError('');
     try {
-      await api(mode, body);
+      setDemoSession('');
+      const signedIn = await api(mode, body);
+      if (signedIn.demo_session) setDemoSession(signedIn.demo_session);
       const next = await refresh();
+      if (!next.user) throw new Error('Sign-in succeeded, but the browser did not keep the session. Please try again.');
       setRole(preferredRole || (next.user.is_admin || next.roles.some(item => item.role === 'organizer') ? 'admin' :
         next.roles.some(item => item.role === 'judge') ? 'jury' : 'contestant'));
     } catch (failure) { setError(failure.message); }
@@ -48,7 +54,7 @@ export default function PortalApp() {
 
   const logout = async () => {
     setBusy(true); setError('');
-    try { await api('logout', {}); await refresh(); setRole('contestant'); }
+    try { await api('logout', {}); setDemoSession(''); await refresh(); setRole('contestant'); }
     catch (failure) { setError(failure.message); }
     finally { setBusy(false); }
   };
@@ -68,7 +74,7 @@ export default function PortalApp() {
           <button className="clay-signout" onClick={logout} disabled={busy}><LogOut size={16}/><span>Sign out</span></button></>}
       </nav>
     </header>
-    {error && <p role="alert" className="mx-auto my-4 max-w-3xl rounded-xl bg-red-50 p-4 text-red-800">{error}</p>}
+    {error && (!identity || identity.user) && <p role="alert" className="mx-auto my-4 max-w-3xl rounded-xl bg-red-50 p-4 text-red-800">{error}</p>}
     {!identity ? <main className="clay-boot"><ClaySkeleton label="Connecting to your portal"/></main> : !identity.user ?
       <main className="clay-landing" id="workspace-main"><div className="clay-auth-layout">
         <div className="clay-auth-story"><span className="clay-eyebrow">A LITTLE STRUCTURE. A LOT OF POSSIBILITY.</span><h2>Good ideas.<br/>Great company.</h2><p>A calmer space to build together, share your work, and discover what comes next.</p><img className="clay-landing-hero" src="/landing/build-together-clay.png" alt="A handmade clay laptop and interlocking blocks on a warm white tabletop" width="1536" height="1024" fetchPriority="high"/><span className="clay-auth-foot">THE DOGFOOD HACKATHON · 2026</span></div>
@@ -89,6 +95,7 @@ export default function PortalApp() {
           {!register && <label className="grid gap-1">Open workspace<select className={field} name="workspace" defaultValue="admin"><option value="admin">Organizer</option><option value="jury">Judge</option><option value="contestant">Participant</option></select></label>}
           <button className={button} disabled={busy} aria-busy={busy}>{busy&&<span className="clay-spinner"/>}{register ? 'Create account' : 'Sign in'}<ArrowUpRight size={16}/></button>
         </form>
+        {error && <p role="alert" className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-800">{error}</p>}
         <button className="mt-4 font-bold underline" onClick={() => {setRegister(!register); setError('');}}>
           {register ? 'Already registered? Sign in' : 'New here? Create an account'}
         </button>
