@@ -1,6 +1,6 @@
 # DOGFOOD 2026 — voiceover matched to the 4:59 screen recording
 
-This script follows the actions actually visible in `submission-demo.mp4`. Generate each timed section separately in ElevenLabs Viraj English so its start can be placed at the indicated time. Do not read the timestamps or headings aloud. The previously generated narration used a different sequence and does not match this cut.
+This script follows the actions actually visible in `submission-demo.mp4`. The supplied ElevenLabs Viraj English recording was generated as one file from the paragraphs below; `scripts/sync_submission_voice.py` aligns each paragraph with the indicated scene. The timestamps and headings are not spoken. The earlier narration used a different sequence and was withdrawn.
 
 ## 0:00–0:36 · Fast lifecycle preview
 

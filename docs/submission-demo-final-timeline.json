@@ -1,0 +1,9 @@
+{
+  "duration": 299,
+  "video": "submission-demo.mp4",
+  "audio": "user-supplied ElevenLabs Viraj MP3",
+  "audioSourceDuration": 307.23,
+  "syncMethod": "cut at quiet paragraph pauses, adjust each paragraph tempo only when longer than its scene, then pad shorter sections",
+  "sourceCutsSeconds": [0, 37.23, 64.15, 99.56, 115.82, 137.22, 177.8, 203.66, 214.45, 232.35, 240.54, 261.34, 272.53, 293.92, 307.23],
+  "videoCutsSeconds": [0, 36, 60, 95, 112, 133, 172, 197, 207, 222, 232, 252, 265, 288, 299]
+}

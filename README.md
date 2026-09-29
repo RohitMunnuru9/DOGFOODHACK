@@ -4,7 +4,7 @@
 
 ![DOGFOOD clay workspace showing the official fixture event](public/landing/demo-poster.jpg)
 
-[Watch the 4:59 screen recording](docs/submission-demo.mp4) · [Read the scene-matched voiceover](docs/submission-voiceover.md) · [Testing results](TESTING.md) · [API documentation](API.md)
+[Watch the final 4:59 narrated video](docs/submission-demo-final.mp4) · [Read the scene-matched voiceover](docs/submission-voiceover.md) · [Testing results](TESTING.md) · [API documentation](API.md)
 
 The project claims **T1, T2, T3 and T4**. The published DOGFOOD checker verifies seven T1/T2 behaviors; it contains no T3/T4 probes. [Our tier evidence](TIER-EVIDENCE.md) and [supplementary regression receipt](tier-regression-report.txt) document the higher-tier workflows without presenting them as organizer-verified.
 
@@ -120,7 +120,7 @@ The [28 September verification](docs/docker-verification-2026-09-28.md) recorded
 
 ## Demo recordings
 
-- [Submission screen recording — MP4](docs/submission-demo.mp4): a 4:59 silent edit of real portal recordings covering event setup, submissions, judging, voting, moderation, records, export, and public results. The [scene-matched voiceover](docs/submission-voiceover.md) is ready for recording. Its opening and [Community footage](docs/community-demo.mp4) show the current interface; the detailed lifecycle recording shows the earlier interface.
+- [Final narrated submission video — MP4](docs/submission-demo-final.mp4): a 4:59 edit of real portal recordings covering event setup, submissions, judging, voting, moderation, records, export, and public results. The supplied ElevenLabs narration was aligned paragraph by paragraph to the [scene-matched script](docs/submission-voiceover.md). The [silent cut](docs/submission-demo.mp4) remains available. Its opening and [Community footage](docs/community-demo.mp4) show the current interface; the detailed lifecycle recording shows the earlier interface.
 - [Current clay UI walkthrough — MP4](public/landing/demo.mp4): a 36.4-second recording of the actual app, embedded on the landing page at `/#watch-demo`.
 - [Earlier five-minute lifecycle recording — WebM](docs/demo.webm): preserved for reference; it shows the preceding interface.
 - [DEMO.md](DEMO.md): scene timings, video checks and recording instructions.
