@@ -1,33 +1,59 @@
-# DOGFOOD 2026 — narrated submission video
+# DOGFOOD 2026 — voiceover matched to the 4:59 screen recording
 
-This is the pitch text supplied for the ElevenLabs Viraj English narration in [submission-demo-voiced.mp4](submission-demo-voiced.mp4). The generated MP3 ran 5:21.8; its tempo was increased by 7.8% to fit the 4:59 screen recording. The opening and Community sections show the current interface; the detailed lifecycle and closing sections use the earlier recorded interface. All footage shows the real portal.
+This script follows the actions actually visible in `submission-demo.mp4`. Generate each timed section separately in ElevenLabs Viraj English so its start can be placed at the indicated time. Do not read the timestamps or headings aloud. The previously generated narration used a different sequence and does not match this cut.
 
-## Narration
+## 0:00–0:36 · Fast lifecycle preview
 
-A hackathon brings together people with ambitious ideas. But running one often means juggling registration forms, team lists, submission links, judging spreadsheets, voting tools, and result announcements. Every handoff creates another chance for confusion.
+Running a hackathon should not mean running five disconnected systems. DOGFOOD is one place to organize an event, build a project, review it, and share a result. In this opening preview, you can see the whole loop: the organizer creates the event, a participant drafts Neighbor Notes, a judge scores the submission, and the organizer publishes results. There is even an Arcade, but the core of this product is the event workflow. Let us slow it down and follow what actually happens.
 
-DOGFOOD brings that journey into one portal. Organizers can set up an event, participants can build and submit, judges can review fairly, and the community can discover what everyone made. The goal is simple: give every person a clear next step, while keeping the event’s rules and records in one place.
+## 0:36–1:00 · Event and judge setup
 
-Let me show you how it works.
+We begin in organizer settings. The organizer sets event dates, a track, and a prize, then adds a custom question. Next, they invite a judge and limit that judge to the Open Innovation track. The weighted rubric is visible on the same screen: functionality, quality, and innovation. These rules are in place before anyone submits.
 
-An organizer starts by creating an event. They set the schedule, tracks, prizes, and questions teams need to answer. They can invite participants and judges, and decide which tracks each judge will review. This is more than a page of editable dates. The server enforces event phases and deadlines, so a browser change cannot reopen a closed submission period.
+## 1:00–1:35 · Team and draft
 
-Now we move into the participant workspace. A participant creates a team and begins a project submission. They can add a title, summary, detailed description, and links to their work. The project starts as a draft. That matters because a team rarely has every detail ready in one sitting. They can return, improve the submission, and review it before the deadline.
+Now a different account opens the participant workspace. The team is Neighborhood builders, with room for four members. The participant enters Neighbor Notes, chooses Open Innovation, and adds a short summary and the full project story. It describes a local-first board for neighborhood projects. Links and images can be added below. At this stage the project is a draft. The team can return to it, edit the details, and make sure the entry represents their work before submitting.
 
-When they submit, the project becomes part of the event’s shared record. The public gallery helps people find work by project and track, and each submission has its own page. Participants can see what they submitted; organizers can see the event’s progress. They are working from the same server-side data, rather than separate copies of a spreadsheet.
+## 1:35–1:52 · Submission and gallery
 
-Next comes one of the hardest parts of any hackathon: judging. Organizers can give judges access to the right event and tracks, then assign projects individually or in balanced batches. The progress view shows what has been completed and what still needs attention. That makes it easier to follow up before the final deadline without exposing private reviews to participants.
+The participant saves the project and submits it. We can now see Neighbor Notes in the public project gallery. This is the handoff from a private draft to a discoverable submission, while judging scores remain private.
 
-Here is the judge’s workspace. A judge opens an assigned project, reads the full submission, and scores it against a weighted rubric for functionality, quality, and innovation. They can also leave written feedback that tells a team more than a number ever could. Reviews are tied to the judge and the rubric version. A judge cannot simply open another judge’s private scores.
+## 1:52–2:13 · Assignment controls
 
-As reviews come in, the organizer can monitor completion and inspect the calculated results. The scoring method is documented in the repository, including how scores from different judges are normalized. That detail matters: a result should be explainable, especially when several judges have different scoring habits.
+Back with the organizer, the judge invitation and rubric appear alongside the assignment controls. The organizer chooses how many reviews each project needs, then assigns a balanced batch. The portal keeps track permissions and existing assignments visible so review work can be distributed deliberately.
 
-When judging is complete, the organizer publishes the result. Publication creates a frozen snapshot of the standings. A later edit to a score or deadline cannot silently change what was announced. The organizer can also export the scores and review counts as a C S V for the event record.
+## 2:13–2:52 · Judge review
 
-DOGFOOD also gives the community a role. In this voting demo, the participant sees a shuffled ballot. They cannot vote for their own team. They choose Open Orbit, and their vote is recorded, while public totals remain hidden during voting. The project page also supports discussion. The participant posts a comment, and the organizer can moderate it by hiding it from public view. Voting access, visibility, and moderation stay under event control.
+Now Mark opens the judge workspace. He sees the project assigned to him: Neighbor Notes. The full submission is one click away. The scoring form asks for functionality, quality, and innovation, and gives him space for written feedback. Here, he scores five, four, and three, and writes that the project is complete and usable end to end. When he submits the review, the score is saved with that rubric. The review stays private to the judge and organizer while the event is still in progress.
 
-After publication, the portal can issue a project certificate and a judge participation record. Each has a verification page on the issuing portal, so a recipient can share a record that someone else can check. Organizers can export an event archive, embed the public gallery, use the documented A P I, and configure signed webhooks for integrations. Passwords and signing secrets are excluded from exported archives.
+## 2:52–3:17 · Progress and audit
 
-Finally, visitors can explore the published results without signing in. The repository includes the source code, setup instructions, and test evidence. The published checker passes all seven available core and judging checks; the voting and integration workflows have separate project tests.
+The organizer returns to the progress view. One review was assigned, and one has been completed; none are pending. The result preview shows Neighbor Notes with a score of four. Below it, the review integrity and event audit sections provide the trail behind that number. This is where the organizer checks readiness before publication.
 
-DOGFOOD is designed to carry an event all the way from the first team to a result people can inspect. It gives organizers control, gives participants clarity, gives judges a focused workflow, and gives the community a place to see the work. Thank you for watching.
+## 3:17–3:27 · Publish
+
+After submissions close, the organizer publishes. The portal freezes a snapshot of the result, so the announced ranking cannot silently shift afterward.
+
+## 3:27–3:42 · Community vote
+
+We move to the Community Vote Demo. The participant sees a shuffled ballot. Their own team is ineligible, so they vote for Open Orbit. The portal records the vote, while public totals stay hidden.
+
+## 3:42–3:52 · Project discussion
+
+Next, the participant opens Open Orbit's discussion and posts a comment. It appears under their name, while voting totals remain hidden.
+
+## 3:52–4:12 · Organizer moderation and preview
+
+The organizer switches to the same event. They can inspect the discussion, hide a comment from public view, and control who may vote. In Results, the organizer sees a private preview. Visitors still see no totals; release remains under event control.
+
+## 4:12–4:25 · Frozen result and event tools
+
+Back in the main event, the result is published. The organizer sees verified records, event export, gallery embed, and webhook settings. They can preserve and share the event history.
+
+## 4:25–4:48 · Certificate verification
+
+We open Neighbor Notes' project certificate. It names the project, team, and event. The portal confirms the issued record is signed and verified, so anyone with the link can check it here. The organizer's workspace also shows a judge participation record beside the project certificate.
+
+## 4:48–4:59 · Public result and close
+
+Finally, the public gallery shows Neighbor Notes, its track, score, and review count without signing in. DOGFOOD's event journey is complete. Thank you.
