@@ -77,11 +77,16 @@ export default function PortalApp() {
         <h1>{register ? 'Create your account' : 'Welcome back'}</h1>
         <p className="mb-6 clay-muted">One account for your teams, events, and judging invitations.</p>
         <form className="grid gap-4" onSubmit={event => {
-          event.preventDefault(); authenticate(Object.fromEntries(new FormData(event.currentTarget)));
+          event.preventDefault();
+          const values = Object.fromEntries(new FormData(event.currentTarget));
+          const workspace = values.workspace;
+          delete values.workspace;
+          authenticate(values, register ? 'register' : 'login', workspace);
         }}>
           {register && <label className="grid gap-1">Name<input className={field} name="name" required minLength={2} autoComplete="name" /></label>}
           <label className="grid gap-1">Email<input className={field} name="email" type="email" required autoComplete="email" /></label>
           <label className="grid gap-1">Password<input className={field} name="password" type="password" required minLength={register ? 10 : undefined} autoComplete={register ? 'new-password' : 'current-password'} /></label>
+          {!register && <label className="grid gap-1">Open workspace<select className={field} name="workspace" defaultValue="admin"><option value="admin">Organizer</option><option value="jury">Judge</option><option value="contestant">Participant</option></select></label>}
           <button className={button} disabled={busy} aria-busy={busy}>{busy&&<span className="clay-spinner"/>}{register ? 'Create account' : 'Sign in'}<ArrowUpRight size={16}/></button>
         </form>
         <button className="mt-4 font-bold underline" onClick={() => {setRegister(!register); setError('');}}>

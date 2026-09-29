@@ -30,7 +30,7 @@ Open **http://localhost:3000/**. Next forwards API, gallery, invitation, embed a
 
 ## Try the full lifecycle
 
-The demo password for seeded accounts is **`dogfood-demo-2026`**. Sign in explicitly; changing workspace tabs never changes the account. Useful accounts include `organizer@demo.local`, `participant@demo.local`, `marek.nowak@example.org` and `priya.nair@example.org`.
+For a shared local preview account, put its `email` and `password` in the ignored `data/demo-login.json` file, then restart the Python API. The seeded account can open the Organizer, Judge, and Participant workspaces and has an open judge assignment. This account is disabled when `DOGFOOD_DEMO_MODE=0` or the local settings file is absent. The original seeded accounts remain available with password **`dogfood-demo-2026`** for role-specific walkthroughs and acceptance checks; they include `organizer@demo.local`, `participant@demo.local`, `marek.nowak@example.org` and `priya.nair@example.org`. Changing workspace tabs never changes the signed-in account.
 
 | Event | Intended walkthrough |
 | --- | --- |

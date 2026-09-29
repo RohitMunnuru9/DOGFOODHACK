@@ -35,6 +35,9 @@ class PortalTests(unittest.TestCase):
     def setUpClass(cls):
         cls.temp = tempfile.TemporaryDirectory()
         portal.DB_PATH = Path(cls.temp.name) / "test.sqlite3"
+        portal.QUICK_DEMO_CONFIG = Path(cls.temp.name) / "demo-login.json"
+        portal.QUICK_DEMO_CONFIG.write_text(json.dumps({
+            "email": "preview@example.test", "password": "local-preview-password"}), encoding="utf-8")
         portal.seed()
         portal.seed()  # The fixture importer must tolerate a restart.
         cls.server = portal.ThreadingHTTPServer(("127.0.0.1", 0), portal.PortalHandler)
@@ -657,6 +660,27 @@ class PortalTests(unittest.TestCase):
         self.assertTrue({"vote_cast", "vote_duplicate_blocked", "vote_self_blocked",
                          "comment_create", "comment_duplicate_blocked", "comment_rate_limited",
                          "comment_moderate"}.issubset(actions))
+
+    def test_local_preview_login_opens_all_three_workspaces(self):
+        email, password = portal.quick_demo_credentials()
+        status, _, headers = self.request("POST", "/api/login", {
+            "email": email, "password": password})
+        self.assertEqual(status, 200)
+        cookie = headers["Set-Cookie"].split(";", 1)[0]
+        identity = self.request("GET", "/api/me", cookie=cookie)[1]
+        self.assertEqual(identity["user"]["email"], email)
+        roles = {(item["event_id"], item["role"]) for item in identity["roles"]}
+        self.assertTrue({("evt_01", "organizer"), ("evt_demo", "participant"),
+                         ("evt_review_demo", "judge")}.issubset(roles))
+        self.assertTrue(self.request("GET", "/api/events/evt_01", cookie=cookie)[1]["can_manage"])
+        self.assertTrue(self.request("GET", "/api/events/evt_review_demo", cookie=cookie)[1]["can_judge"])
+        assignments = self.request("GET", "/api/judges/demo_explorer/scores", cookie=cookie)[1]
+        self.assertIn("review_demo_explorer_assignment",
+                      {item["assignment_id"] for item in assignments["assignments"]})
+        with patch.object(portal, "DEMO_MODE", False):
+            self.assertEqual(self.request("POST", "/api/login", {
+                "email": email, "password": password})[0], 401)
+            self.assertIsNone(self.request("GET", "/api/me", cookie=cookie)[1]["user"])
 
     def test_t1_sessions_and_event_role_permissions(self):
         self.assertIsNone(self.request("GET", "/api/me")[1]["user"])

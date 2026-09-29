@@ -27,6 +27,7 @@ from urllib.request import Request, urlopen
 ROOT = Path(__file__).resolve().parent.parent
 DB_PATH = Path(os.environ.get("DOGFOOD_DB", ROOT / "data" / "dogfood.sqlite3"))
 FIXTURE_PATH = Path(os.environ.get("DOGFOOD_FIXTURES", ROOT / "fixtures.json"))
+QUICK_DEMO_CONFIG = ROOT / "data" / "demo-login.json"
 DEMO_MODE = os.environ.get("DOGFOOD_DEMO_MODE", "1") == "1"
 PORT = int(os.environ.get("PORT", "8080"))
 HOST = os.environ.get("HOST", "0.0.0.0")
@@ -77,6 +78,21 @@ def verify_password(password: str, stored: str) -> bool:
         return hmac.compare_digest(password_hash(password, salt), stored)
     except (ValueError, TypeError):
         return False
+
+
+def quick_demo_credentials() -> tuple[str, str] | None:
+    """Read optional preview credentials from the ignored local data directory."""
+    if not DEMO_MODE or not QUICK_DEMO_CONFIG.is_file():
+        return None
+    try:
+        config = json.loads(QUICK_DEMO_CONFIG.read_text(encoding="utf-8"))
+        email = config["email"].strip().lower()
+        password = config["password"]
+        if re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email) and isinstance(password, str) and password:
+            return email, password
+    except (OSError, ValueError, KeyError, AttributeError, TypeError):
+        pass
+    return None
 
 
 @contextmanager
@@ -387,6 +403,19 @@ def seed() -> None:
         organizer = create_user(conn, "organizer@demo.local", "Demo Organizer", DEMO_PASSWORD, "demo_organizer")
         create_user(conn, "admin@demo.local", "Demo Admin", DEMO_PASSWORD, "demo_admin", admin=True)
         participant = create_user(conn, "participant@demo.local", "Demo Participant", DEMO_PASSWORD, "demo_participant")
+        quick_config = quick_demo_credentials()
+        quick_demo_id = None
+        if quick_config:
+            email, password = quick_config
+            quick_demo = user_by_email(conn, email)
+            # Never grant demo privileges to an unrelated account with this email.
+            if quick_demo is None:
+                quick_demo_id = create_user(conn, email, "Demo Explorer", password, "demo_explorer")
+            elif quick_demo["id"] == "demo_explorer":
+                quick_demo_id = quick_demo["id"]
+                if not verify_password(password, quick_demo["password_hash"]):
+                    conn.execute("UPDATE users SET password_hash=? WHERE id=?",
+                                 (password_hash(password), quick_demo_id))
         event = fixture["event"]
         conn.execute("INSERT OR IGNORE INTO events(id,name,description,starts_at,submissions_close,status,created_by,created_at) VALUES(?,?,?,?,?,?,?,?)",
                      (event["id"], event["name"], "Imported DOGFOOD fixture", "2026-02-26T00:00:00Z",
@@ -404,6 +433,13 @@ def seed() -> None:
         for event_id in (event["id"], "evt_demo"):
             conn.execute("INSERT OR IGNORE INTO event_roles VALUES(?,?,?)", (event_id, organizer, "organizer"))
             conn.execute("INSERT OR IGNORE INTO event_roles VALUES(?,?,?)", (event_id, participant, "participant"))
+        if quick_demo_id:
+            for event_id in (event["id"], "evt_demo", "evt_vote_demo"):
+                conn.execute("INSERT OR IGNORE INTO event_roles VALUES(?,?,?)",
+                             (event_id, quick_demo_id, "organizer"))
+            for event_id in ("evt_demo", "evt_vote_demo"):
+                conn.execute("INSERT OR IGNORE INTO event_roles VALUES(?,?,?)",
+                             (event_id, quick_demo_id, "participant"))
         vote_builder = create_user(conn, "vote-builder@demo.local", "Demo Builder", DEMO_PASSWORD,
                                    "demo_vote_builder")
         for account, assigned in ((organizer, "organizer"), (participant, "participant"),
@@ -452,6 +488,10 @@ def seed() -> None:
                                   (review_judge, "judge")):
             conn.execute("INSERT OR IGNORE INTO event_roles VALUES(?,?,?)",
                          (review_event, account, assigned))
+        if quick_demo_id:
+            for assigned in ("organizer", "judge"):
+                conn.execute("INSERT OR IGNORE INTO event_roles VALUES(?,?,?)",
+                             (review_event, quick_demo_id, assigned))
         conn.execute("INSERT OR IGNORE INTO tracks VALUES(?,?,?)",
                      ("review_demo_track", review_event, "Open Innovation"))
         conn.execute("INSERT OR IGNORE INTO teams VALUES(?,?,?,?,?)",
@@ -473,6 +513,10 @@ def seed() -> None:
         conn.execute("INSERT OR IGNORE INTO assignments VALUES(?,?,?,?,?,?)",
                      ("review_demo_assignment", review_event, "review_demo_project", review_judge,
                       "demo-pending", iso()))
+        if quick_demo_id:
+            conn.execute("INSERT OR IGNORE INTO assignments VALUES(?,?,?,?,?,?)",
+                         ("review_demo_explorer_assignment", review_event, "review_demo_project",
+                          quick_demo_id, "demo-pending", iso()))
         for item in fixture["teams"]:
             members = item.get("members", [])
             leader = create_user(conn, members[0], members[0].split("@")[0], DEMO_PASSWORD) if members else participant
@@ -1030,8 +1074,13 @@ class PortalHandler(BaseHTTPRequestHandler):
                 token = ""
         if not token:
             return None
-        return conn.execute("""SELECT u.* FROM sessions s JOIN users u ON u.id=s.user_id
+        account = conn.execute("""SELECT u.* FROM sessions s JOIN users u ON u.id=s.user_id
             WHERE s.token_hash=? AND s.expires_at>?""", (token_hash(token), iso())).fetchone()
+        if account and account["id"] == "demo_explorer":
+            config = quick_demo_credentials()
+            if not config or account["email"] != config[0]:
+                return None
+        return account
 
     def must_user(self, user: sqlite3.Row | None) -> sqlite3.Row:
         require(user is not None, 401, "Authentication required")
@@ -1247,6 +1296,10 @@ class PortalHandler(BaseHTTPRequestHandler):
         if path == "/api/login" and method == "POST":
             body = self.body_json()
             account = user_by_email(conn, clean(body.get("email", ""), 200))
+            if account and account["id"] == "demo_explorer":
+                config = quick_demo_credentials()
+                if not config or account["email"] != config[0]:
+                    account = None
             require(account is not None and verify_password(body.get("password", ""), account["password_hash"]),
                     401, "Invalid email or password")
             token = create_session(conn, account["id"])
