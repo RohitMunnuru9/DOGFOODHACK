@@ -37,6 +37,10 @@ Raw captured frames stay under ignored `test-results/demo-recording/`. Successfu
 
 For a submission form requiring a hosted video service or direct upload, upload the MP4 or WebM and use the resulting link.
 
-## Submission-length recording
+## Submission-length video and voiceover
 
-The host's [required deliverables](https://dogfoodhack.com/spec/) also call for a five-minute demo. The existing [five-minute lifecycle recording](docs/demo.webm) is preserved separately; it shows the preceding interface. The new landing-page preview above shows the current clay interface and does not replace that longer submission artifact.
+[Watch or download the 4:59 MP4](docs/submission-demo.mp4) · [Read the timed voiceover](docs/submission-voiceover.md) · [Scene timeline](docs/submission-demo-timeline.json)
+
+The silent submission video combines footage recorded from the current clay interface with feature and evidence slides. It covers T1 through T4 and gives a precise place to narrate each topic. The T3/T4 slides explain implemented workflows; they are not shown as live browser footage. The published checker verifies T1/T2 only, and the separate T3/T4 test counts are labeled project-owned. The old [five-minute lifecycle recording](docs/demo.webm), showing the preceding interface, remains available for reference.
+
+To reproduce the silent cut, install Pillow and provide FFmpeg via `FFMPEG_PATH` or `data/ffmpeg.exe`, then run `python scripts/make_submission_video.py`. The script uses `public/landing/demo.mp4` as its recorded UI source and writes the MP4, timeline, and voiceover text. Add the recorded voiceover later as an audio track without changing the scene timings.

@@ -4,7 +4,7 @@
 
 ![DOGFOOD clay workspace showing the official fixture event](public/landing/demo-poster.jpg)
 
-[Watch the current UI walkthrough](public/landing/demo.mp4) · [Testing results](TESTING.md) · [API documentation](API.md)
+[Watch the 4:59 submission video](docs/submission-demo.mp4) · [Read the timed voiceover](docs/submission-voiceover.md) · [Testing results](TESTING.md) · [API documentation](API.md)
 
 The project claims **T1, T2, T3 and T4**. The published DOGFOOD checker verifies seven T1/T2 behaviors; it contains no T3/T4 probes. [Our tier evidence](TIER-EVIDENCE.md) and [supplementary regression receipt](tier-regression-report.txt) document the higher-tier workflows without presenting them as organizer-verified.
 
@@ -120,8 +120,9 @@ The [28 September verification](docs/docker-verification-2026-09-28.md) recorded
 
 ## Demo recordings
 
+- [Submission video — MP4](docs/submission-demo.mp4): a 4:59 silent presentation combining real current-interface footage with feature and evidence slides. [Timed voiceover script](docs/submission-voiceover.md) is ready to record; T3/T4 slides are labeled explanations, not live screen capture.
 - [Current clay UI walkthrough — MP4](public/landing/demo.mp4): a 36.4-second recording of the actual app, embedded on the landing page at `/#watch-demo`.
-- [Five-minute lifecycle recording — WebM](docs/demo.webm): the longer submission artifact, showing the preceding interface.
+- [Earlier five-minute lifecycle recording — WebM](docs/demo.webm): preserved for reference; it shows the preceding interface.
 - [DEMO.md](DEMO.md): scene timings, video checks and recording instructions.
 
 ## Running your own event
