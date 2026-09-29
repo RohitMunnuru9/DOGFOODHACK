@@ -1,107 +1,74 @@
-# DOGFOOD 2026 — voiceover for the silent submission video
+# DOGFOOD 2026 — five-minute screen-recording voiceover
 
-The video is 4:59, with no audio track. Read each paragraph over its matching scene. Speak naturally at about 125–135 words per minute and leave a short pause at each scene change.
+The video runs **4:59** and has no audio track. Read each paragraph over the matching time range at a conversational pace. Let the recorded clicks and transitions breathe. These are real portal recordings throughout: the opening and Community sections show the current interface, while the longer detailed lifecycle footage uses the earlier interface.
 
-The visual material combines recorded current-UI actions with clearly labeled feature and evidence slides. T3/T4 slides explain implemented behavior; they are not presented as live screen capture.
+## 00:00–00:18 · The current DOGFOOD interface
 
-## 00:00–00:12 · The whole hackathon, in one place
+This is DOGFOOD, a portal for running a hackathon from the first team to the final result. We start with a quick recording of the current interface: organizers create an event, and participants build teams and submit their projects.
 
-Meet DOGFOOD: a self-hosted portal for the complete hackathon journey. Teams form and submit projects, judges review against a clear rubric, and organizers can manage the event through published results.
+## 00:18–00:36 · From reviews to celebration
 
-## 00:12–00:16 · Current portal in action
+Judges receive assignments and score projects against a rubric. Organizers publish the results, visitors explore the public gallery, and the Arcade offers a short break. Now let us slow down and follow the full workflow step by step.
 
-This is the actual current interface, running locally.
+## 00:36–01:03 · Set the stage
 
-## 00:16–00:25 · Built to run anywhere
+The organizer enters the event name, schedule, tracks, and prizes. They can invite participants and judges, choose a judge’s tracks, and add questions for project teams. The event phase and deadlines are enforced by the server, so changing a browser field cannot quietly reopen a closed submission period.
 
-It runs locally with Docker Compose. Next.js serves the interface, Python handles the API and permissions, and SQLite keeps the event data portable.
+## 01:03–01:30 · Build a team and draft a project
 
-## 00:25–00:39 · From event setup to submission
+In the participant workspace, someone creates a team, enters a project title and summary, and adds the fuller story and links. A draft can be saved and edited while submissions are open. The team can review its work before submitting, instead of losing everything in one form session.
 
-First, an organizer creates an event with dates, tracks and prizes. A participant forms a team, writes a draft and submits a project.
+## 01:30–01:54 · Submit and discover
 
-## 00:39–00:53 · Event controls that matter
+When the project is ready, the participant submits it. The public gallery makes submitted work discoverable by name and track, and each project has a dedicated page. The portal keeps the submission state, deadline, and team membership on the server so visitors see the same event data.
 
-The organizer controls event phases and deadlines from the settings view. The server enforces those deadlines, so a browser cannot simply submit after the cutoff.
+## 01:54–02:18 · Assign fair review work
 
-## 00:53–01:06 · A real submission flow
+Back in the organizer workspace, judges receive access to the appropriate event and tracks. An organizer can assign a balanced batch or assign a particular submitted project. The progress panel shows how many reviews are pending and completed, without revealing another judge’s private work to a participant.
 
-Participants can build a team and save their project as a draft. They can return to edit it, then submit when the work is ready.
+## 02:18–02:45 · Judge an assigned project
 
-## 01:06–01:18 · Explore the official fixture
+Here is the judge’s view. The judge opens only a project assigned to them, reads the complete submission, gives scores for functionality, quality, and innovation, and writes useful feedback. The rubric weights determine the raw score. The review is saved under that judge’s identity and rubric version; another judge cannot request those private scores.
 
-The public gallery loads the official fixture: forty teams and forty-one project rows. Visitors can search and filter submissions; the duplicate remains visible but does not distort results.
+## 02:45–03:07 · Complete reviews and inspect progress
 
-## 01:18–01:25 · Each role has a clear workspace
+The judge saves the weighted review, and the organizer sees the completion count update. The progress view identifies what is still pending. Scores remain private until the event is ready to publish, but the organizer can inspect the calculated result and prepare the final snapshot.
 
-One account can switch workspaces, while the API still checks each event role.
+## 03:07–03:27 · Publish a frozen result
 
-## 01:25–01:37 · Assign, review, publish
+After submissions close, the organizer publishes the judging result. This freezes a snapshot of the standings, so later timing changes or score edits cannot silently rewrite it. The organizer can export a CSV with the scores and review counts for the event record.
 
-Judging begins with assignments. A judge sees their own project, enters rubric scores and feedback, and the organizer can publish a frozen result after the deadline.
+## 03:27–03:42 · Cast a community vote
 
-## 01:37–01:50 · Thoughtful, private reviews
+This is the current interface. In Community Vote Demo, the participant sees a shuffled ballot. Their own team is ineligible. They vote for Open Orbit, and the portal records it. The Results screen still hides totals from visitors.
 
-Judges only see their assigned reviews. Each score follows a weighted rubric, and private comments give teams useful feedback without exposing other judges' work.
+## 03:42–03:57 · Discuss a submitted project
 
-## 01:50–02:02 · Progress without peeking
+Next, the participant opens Open Orbit’s discussion and posts a comment. The saved message appears with their name on the project, giving teams a place to receive feedback beyond the judging rubric.
 
-Organizers can monitor assignment progress and export results. A judge cannot read a peer's private score, and a participant cannot access the review ledger.
+## 03:57–04:12 · Moderate and preview
 
-## 02:02–02:15 · Fairer comparisons
+The organizer sees that comment and hides it from public view. They can also inspect voting access and preview the result while visitors still see no totals. Moderation and release remain under event control.
 
-The result calculation documents weighted criteria and judge-mean normalization. Publication freezes the result snapshot so later edits do not quietly change the standings.
+## 04:12–04:22 · Return to publication
 
-## 02:15–02:29 · Find Community Vote Demo
+Back in the full event recording, the organizer finishes publication and exports the scoring record. The published snapshot is fixed.
 
-For community voting, choose Participate, select Community Vote Demo in the Current Event dropdown, then open Community in the left navigation. This is the separate voting sample event.
+## 04:22–04:37 · Verify participation records
 
-## 02:29–02:43 · Controlled voting access
+Publication also issues a project certificate and a judge record. Each opens a public verification page served by this portal. The video opens one, showing how a recipient can check it against the event’s published result.
 
-The organizer chooses signed-in voting or an email-bound invitation. Eligible projects appear in a shuffled ballot, and each account can cast only one recorded vote.
+## 04:37–04:49 · Move data and integrate
 
-## 02:43–02:57 · A conversation around projects
+The organizer can export a full event archive, embed the public gallery, use the REST API, and configure signed webhooks. Passwords and signing secrets stay out of the archive.
 
-The same community area supports project comments. Organizers can moderate them, while duplicate and rate controls help keep the discussion useful.
+## 04:49–04:59 · Public result and close
 
-## 02:57–03:10 · Results stay private until release
-
-During voting, public tallies stay hidden. The organizer can inspect the audit trail for blocked attempts; visitors only see results after publication.
-
-## 03:10–03:24 · Documented API and webhooks
-
-For integrations, the portal exposes a documented REST API and signed event webhooks. Organizers can inspect deliveries and retry pending ones.
-
-## 03:24–03:38 · Records people can verify
-
-After publication, the portal can issue project certificates and judge participation records. Each record has a public verification link served by the issuing portal.
-
-## 03:38–03:51 · Put the gallery anywhere
-
-The public gallery can also be embedded in another site with an iframe, so an event can display its projects outside the organizer workspace.
-
-## 03:51–04:05 · Your event data can move
-
-A full JSON archive can restore event history into a new empty event, including roles, rubric versions, reviews, votes and comments. Passwords and signing secrets stay out of the archive.
-
-## 04:05–04:23 · The checks are visible in the repo
-
-The published DOGFOOD checker passes all seven of its T1 and T2 probes. Separate project regression tests pass two T3 and four T4 workflows. Those higher-tier tests are clearly labeled as our own, not organizer verification.
-
-## 04:23–04:38 · Clone. Start. Explore.
-
-The public repository includes the source, fixtures, architecture notes and test reports. A judge can start it with Docker Compose, and SQLite data survives a service restart.
-
-## 04:38–04:44 · A little room to play
-
-There is also an arcade for a small break between the serious work.
-
-## 04:44–04:59 · DOGFOOD 2026
-
-DOGFOOD keeps the event journey together: build, review, vote and celebrate. The code and test evidence are in the public repository. Thank you for watching.
+Finally, a visitor sees the frozen result in the public gallery without signing in. The source and test reports are in the repository. Thanks for watching.
 
 ## Recording notes
 
-- Do not show passwords, session tokens, or webhook secrets.
-- Export your voiceover as WAV or MP3. It can be added as a separate audio track later.
-- The published checker confirms T1/T2 only; the T3/T4 test scores shown are project-owned regressions.
+- Record voice only; this MP4 intentionally has no audio track. Send the WAV or MP3 file to add it to the video.
+- The opening and Community sections show the current interface. The detailed middle and closing sections come from the earlier recorded interface. All sections show the real portal, not mockup slides.
+- The published checker verifies T1/T2. T3/T4 have separate project-owned regression evidence in the repository.
+- Do not show passwords, session tokens, invitation links, or webhook secrets in any added footage.

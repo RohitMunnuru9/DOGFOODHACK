@@ -1,176 +1,33 @@
 {
   "duration": 299.0,
-  "width": 1600,
-  "height": 900,
+  "format": "silent screen recording edit",
+  "size": "1280x900",
   "fps": 25,
-  "scenes": [
+  "sourceFootage": [
+    "public/landing/demo.mp4",
+    "docs/demo.webm",
+    "docs/community-demo.mp4"
+  ],
+  "sections": [
     {
-      "start": 0.0,
-      "end": 12.0,
-      "chapter": "INTRO",
-      "title": "The whole hackathon, in one place",
-      "kind": "slide"
+      "start": 0,
+      "end": 36.36,
+      "content": "Current interface recording: lifecycle preview"
     },
     {
-      "start": 12.0,
-      "end": 16.36,
-      "chapter": "INTRO",
-      "title": "Current portal in action",
-      "kind": "clip"
+      "start": 35.86,
+      "end": 207.5,
+      "content": "Actual browser recording: event setup, team, submission, judging, results"
     },
     {
-      "start": 16.36,
-      "end": 25.0,
-      "chapter": "INTRO",
-      "title": "Built to run anywhere",
-      "kind": "slide"
+      "start": 207.0,
+      "end": 251.96,
+      "content": "Current interface recording: vote, comment, moderation, organizer access"
     },
     {
-      "start": 25.0,
-      "end": 38.52,
-      "chapter": "T1 / CORE",
-      "title": "From event setup to submission",
-      "kind": "clip"
-    },
-    {
-      "start": 38.52,
-      "end": 52.52,
-      "chapter": "T1 / CORE",
-      "title": "Event controls that matter",
-      "kind": "slide"
-    },
-    {
-      "start": 52.52,
-      "end": 65.52,
-      "chapter": "T1 / CORE",
-      "title": "A real submission flow",
-      "kind": "slide"
-    },
-    {
-      "start": 65.52,
-      "end": 77.52,
-      "chapter": "T1 / CORE",
-      "title": "Explore the official fixture",
-      "kind": "slide"
-    },
-    {
-      "start": 77.52,
-      "end": 85.0,
-      "chapter": "T1 / CORE",
-      "title": "Each role has a clear workspace",
-      "kind": "slide"
-    },
-    {
-      "start": 85.0,
-      "end": 97.2,
-      "chapter": "T2 / JUDGING",
-      "title": "Assign, review, publish",
-      "kind": "clip"
-    },
-    {
-      "start": 97.2,
-      "end": 110.2,
-      "chapter": "T2 / JUDGING",
-      "title": "Thoughtful, private reviews",
-      "kind": "slide"
-    },
-    {
-      "start": 110.2,
-      "end": 122.2,
-      "chapter": "T2 / JUDGING",
-      "title": "Progress without peeking",
-      "kind": "slide"
-    },
-    {
-      "start": 122.2,
-      "end": 135.0,
-      "chapter": "T2 / JUDGING",
-      "title": "Fairer comparisons",
-      "kind": "slide"
-    },
-    {
-      "start": 135.0,
-      "end": 149.0,
-      "chapter": "T3 / COMMUNITY",
-      "title": "Find Community Vote Demo",
-      "kind": "slide"
-    },
-    {
-      "start": 149.0,
-      "end": 163.0,
-      "chapter": "T3 / COMMUNITY",
-      "title": "Controlled voting access",
-      "kind": "slide"
-    },
-    {
-      "start": 163.0,
-      "end": 177.0,
-      "chapter": "T3 / COMMUNITY",
-      "title": "A conversation around projects",
-      "kind": "slide"
-    },
-    {
-      "start": 177.0,
-      "end": 190.0,
-      "chapter": "T3 / COMMUNITY",
-      "title": "Results stay private until release",
-      "kind": "slide"
-    },
-    {
-      "start": 190.0,
-      "end": 204.0,
-      "chapter": "T4 / INTEGRATIONS",
-      "title": "Documented API and webhooks",
-      "kind": "slide"
-    },
-    {
-      "start": 204.0,
-      "end": 218.0,
-      "chapter": "T4 / INTEGRATIONS",
-      "title": "Records people can verify",
-      "kind": "slide"
-    },
-    {
-      "start": 218.0,
-      "end": 231.0,
-      "chapter": "T4 / INTEGRATIONS",
-      "title": "Put the gallery anywhere",
-      "kind": "slide"
-    },
-    {
-      "start": 231.0,
-      "end": 245.0,
-      "chapter": "T4 / INTEGRATIONS",
-      "title": "Your event data can move",
-      "kind": "slide"
-    },
-    {
-      "start": 245.0,
-      "end": 263.0,
-      "chapter": "PROOF",
-      "title": "The checks are visible in the repo",
-      "kind": "slide"
-    },
-    {
-      "start": 263.0,
-      "end": 278.0,
-      "chapter": "PROOF",
-      "title": "Clone. Start. Explore.",
-      "kind": "slide"
-    },
-    {
-      "start": 278.0,
-      "end": 284.28,
-      "chapter": "PROOF",
-      "title": "A little room to play",
-      "kind": "clip"
-    },
-    {
-      "start": 284.28,
+      "start": 251.46,
       "end": 299.0,
-      "chapter": "FINISH",
-      "title": "DOGFOOD 2026",
-      "kind": "slide"
+      "content": "Actual browser recording: verified records, archive, embed, webhooks, public gallery"
     }
   ]
 }

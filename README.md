@@ -120,7 +120,7 @@ The [28 September verification](docs/docker-verification-2026-09-28.md) recorded
 
 ## Demo recordings
 
-- [Submission video — MP4](docs/submission-demo.mp4): a 4:59 silent presentation combining real current-interface footage with feature and evidence slides. [Timed voiceover script](docs/submission-voiceover.md) is ready to record; T3/T4 slides are labeled explanations, not live screen capture.
+- [Submission video — MP4](docs/submission-demo.mp4): a 4:59 silent edit of real portal screen recordings covering event setup, submissions, judging, voting, moderation, records, export, and public results. [Timed voiceover script](docs/submission-voiceover.md) is ready to record. Its opening and [Community footage](docs/community-demo.mp4) show the current interface; the detailed lifecycle recording shows the earlier interface.
 - [Current clay UI walkthrough — MP4](public/landing/demo.mp4): a 36.4-second recording of the actual app, embedded on the landing page at `/#watch-demo`.
 - [Earlier five-minute lifecycle recording — WebM](docs/demo.webm): preserved for reference; it shows the preceding interface.
 - [DEMO.md](DEMO.md): scene timings, video checks and recording instructions.
