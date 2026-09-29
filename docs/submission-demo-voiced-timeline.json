@@ -1,0 +1,36 @@
+{
+  "duration": 299.0,
+  "fps": 25,
+  "size": "1280x900",
+  "format": "screen recording with ElevenLabs Viraj narration",
+  "audio": {
+    "sourceDurationSeconds": 321.8,
+    "tempoFactor": 1.078,
+    "codec": "AAC mono 48 kHz",
+    "targetDurationSeconds": 299.0
+  },
+  "sections": [
+    {
+      "start": 0,
+      "end": 36.36,
+      "content": "Current interface lifecycle preview"
+    },
+    {
+      "start": 35.86,
+      "end": 207,
+      "content": "Earlier interface: event setup, team, submission, judging, results"
+    },
+    {
+      "start": 207,
+      "end": 237,
+      "content": "Current interface: voting, comment, moderation, visibility controls",
+      "speedRelativeToSilentCut": 1.5
+    },
+    {
+      "start": 237,
+      "end": 299,
+      "content": "Earlier interface: publication, records, archive, integration, public gallery",
+      "speedRelativeToSilentCut": 0.7581
+    }
+  ]
+}
