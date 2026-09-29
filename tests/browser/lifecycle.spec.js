@@ -13,7 +13,9 @@ test('create, submit, judge, publish and export an event through the browser', a
   const section = name => page.locator('section:visible').filter({has:page.getByRole('heading',{name,exact:true})});
   const signIn = async role => {
     await page.getByRole('button',{name:'Sign out'}).click();
-    await page.getByRole('button',{name:role,exact:true}).click();
+    await expect(page.getByRole('heading',{name:'Welcome back'})).toBeVisible();
+    await page.locator('.clay-demo-accounts').getByRole('button',{name:role,exact:true}).click();
+    await expect(page.getByRole('button',{name:'Sign out'})).toBeVisible();
   };
   await page.goto('/');
   await page.getByRole('button',{name:'Organizer',exact:true}).click();

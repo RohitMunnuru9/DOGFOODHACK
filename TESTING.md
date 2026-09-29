@@ -1,6 +1,8 @@
 # Verification
 
-Latest result: the [28 September Docker verification](docs/docker-verification-2026-09-28.md) passed on the current packaged app, including 25 browser tests, 21 containerized API tests, both normal and offline 7/7 host checks, full fixture comparisons, local media delivery and restart persistence. This resolves the Docker availability limitation recorded in the earlier native UI checks below. The submission now claims T1–T4; the published checker has probes only for T1/T2, and [TIER-EVIDENCE.md](TIER-EVIDENCE.md) lists the separate T3/T4 evidence and limits.
+The latest local check is the [29 September final verification](docs/final-verification-2026-09-29.md): 7/7 published T1/T2 checks, 2/2 T3 and 4/4 T4 project regressions, 22 Python tests, 3 Node tests, 25 Chrome browser tests, fixture and normalization comparisons, production build, and demo-media validation. Docker could not be rerun in that environment; the packaged verification below remains the latest Docker result.
+
+Latest Docker result: the [28 September Docker verification](docs/docker-verification-2026-09-28.md) passed on the packaged app, including 25 browser tests, 21 containerized API tests, both normal and offline 7/7 host checks, full fixture comparisons, local media delivery and restart persistence. This resolves the Docker availability limitation recorded in the earlier native UI checks below. The submission now claims T1–T4; the published checker has probes only for T1/T2, and [TIER-EVIDENCE.md](TIER-EVIDENCE.md) lists the separate T3/T4 evidence and limits.
 
 Run `python scripts/check_upper_tiers.py` for a fresh, separately labeled T3/T4 regression receipt. It currently executes two T3 tests and four T4 tests from the isolated Python integration suite and writes `tier-regression-report.txt`. It is project evidence, not an extension of the published acceptance checker.
 
