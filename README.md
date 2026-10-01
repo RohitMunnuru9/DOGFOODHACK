@@ -2,19 +2,21 @@
 
 **A self-hosted hackathon portal that takes an event from team formation to published results.** Participants submit projects, judges review them against a weighted rubric, organizers track progress, and the public can explore the gallery. The app runs locally with Next.js, a Python API, and SQLite.
 
-[![Watch the 4:59 DOGFOOD walkthrough](public/landing/demo-poster.jpg)](https://youtu.be/R15Ozwz467g?si=d4dMFViiK1dxH6Nz)
+[![Watch the 4:59 DOGFOOD walkthrough](public/landing/demo-poster.jpg)](https://www.youtube.com/watch?v=R15Ozwz467g)
 
-**[Watch the 4:59 demo on YouTube](https://youtu.be/R15Ozwz467g?si=d4dMFViiK1dxH6Nz)** · [Download the same video](docs/submission-demo-final.mp4) · [Acceptance receipt](acceptance-report.txt) · [Verification](TESTING.md) · [MIT license](LICENSE)
+**[Watch the 4:59 demo on YouTube](https://www.youtube.com/watch?v=R15Ozwz467g)** · [Download the same video](docs/submission-demo-final.mp4) · [Acceptance receipt](acceptance-report.txt) · [Verification](TESTING.md) · [MIT license](LICENSE)
 
 ## Run it
 
-Install Docker with Compose, start the Docker engine, then run from the repository root:
+Install Docker with Compose and start the Docker engine. From a directory where you want to clone the project, run:
 
 ```bash
 git clone https://github.com/RohitMunnuru9/DOGFOODHACK.git
 cd DOGFOODHACK
 docker compose up --build --wait
 ```
+
+If you already have a checkout, run only `docker compose up --build --wait` from its root.
 
 Open **http://localhost:8000/**. The portal starts with the official `fixtures.json`, three interactive demo events, and seeded demo accounts. Next.js and the Python API run in separate containers; SQLite is stored in a named volume and survives container restarts. Set `DOGFOOD_PORT` if port 8000 is already in use.
 
@@ -23,6 +25,8 @@ The first image build needs base images and npm packages available or cached. **
 ```bash
 docker compose up --no-build --pull never --wait
 ```
+
+Use `docker compose stop` to stop the services without removing their SQLite volume. Run the start command again to resume the same data.
 
 ## Explore a complete event
 
@@ -35,6 +39,8 @@ Use the **Organizer**, **Participant**, and **Judge** demo buttons on the sign-i
 | Judge A | `marek.nowak@example.org` | Open an assigned review and submit private rubric scores. |
 | Judge B | `priya.nair@example.org` | Confirm judges cannot read each other's scores. |
 
+For a shared preview login on a **native Python run**, add an ignored `data/demo-login.json` containing `{"email":"preview@example.org","password":"choose-a-private-password"}` and restart the API. That account can open all three workspaces and has an open judge assignment. This optional file is not copied into the Docker image; the role-specific accounts above work in Docker. The shared preview login is disabled when `DOGFOOD_DEMO_MODE=0`.
+
 Choose an event that matches the action:
 
 | Event | Purpose |
@@ -45,6 +51,8 @@ Choose an event that matches the action:
 | **Sample Hack 2026** (`evt_01`) | The official historical fixture. Its submission deadline is intentionally closed. |
 
 The official fixture contains **8 tracks, 30 judges, 40 teams, 41 submission rows, and 126 reviews**. Its duplicate submission remains visible but is excluded from scoring; unfinished assignments stay unfinished. The original `2026-03-01T18:00:00Z` deadline is preserved. For a fresh end-to-end lifecycle, create a new event rather than changing the fixture. See the [guided walkthrough](DEMO.md).
+
+The interactive event dates are set when a new demo database is seeded. An older saved volume can eventually pass those dates; create a new event for a fresh submission or voting window.
 
 ## What is implemented
 
@@ -89,7 +97,7 @@ npm run build
 
 `check_acceptance.py` runs the exact organizer-supplied `run.py`, writes its stdout to `acceptance-report.txt`, and fails the shell if any of the seven checks fails. `check_upper_tiers.py` runs separate project-owned regressions and writes `tier-regression-report.txt`. Use `--base-url` with the two host scripts if you changed the portal port.
 
-Browser tests create accounts and events, so use a disposable database or test instance. With Node dependencies and Playwright Chromium installed, run `npx playwright test`; by default it starts isolated local services. The [latest verification](docs/final-verification-2026-09-29.md) recorded **7/7** published checks, **22** Python tests, **3** Node tests, **25** browser tests, fixture and normalization comparisons, and an optimized Next.js build. The earlier [Docker verification](docs/docker-verification-2026-09-28.md) records packaged and offline checks.
+Browser tests create accounts and events, so use a disposable database or test instance. After `npm ci`, install Chromium with `npx playwright install chromium`, then run `npx playwright test`; by default it starts isolated local services. Set `DOGFOOD_TEST_URL` to test a running demo/test portal instead. The [29 September verification](docs/final-verification-2026-09-29.md) recorded **7/7** published checks, **22** Python tests, **3** Node tests, **25** browser tests, fixture and normalization comparisons, and an optimized Next.js build. The earlier [Docker verification](docs/docker-verification-2026-09-28.md) records packaged and offline checks for its stated revision.
 
 ## Develop without Docker
 
@@ -116,7 +124,7 @@ $env:DOGFOOD_ADMIN_PASSWORD='choose-at-least-12-characters'
 docker compose -p dogfood-event up --build --wait
 ```
 
-Keep backups of the SQLite volume. Protect admin credentials and webhook secrets. Disabling demo mode on an **existing** volume does not delete accounts that were already seeded.
+Replace the example email and password with your own values and use a previously unused Compose project name. Keep backups of the SQLite volume. Protect admin credentials and webhook secrets. Disabling demo mode on an **existing** volume does not delete accounts that were already seeded.
 
 ## Boundaries
 
